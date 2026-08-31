@@ -15,6 +15,7 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
   const pageRef = React.useRef<HTMLDivElement>(null)
   const activeWordRef = React.useRef<HTMLSpanElement>(null)
   const [fingerStyle, setFingerStyle] = React.useState<React.CSSProperties>({ opacity: 0 })
+  const compositorRef = React.useRef<{ draw: () => void; destroy: () => void } | null>(null)
 
   React.useEffect(() => {
     let cancelled = false
@@ -41,9 +42,14 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
     const canvas = exportCanvasRef?.current
     if (!canvas || !lines.length) return
     let cancelled = false
-    void createExportCompositor({ canvas, width: canvas.width || 1280, height: canvas.height || 720, background: exportBackground, logo: exportLogo, translations: exportTranslations, drawMushaf }).then(compositor => { if (!cancelled) compositor.draw() }).catch(error => { if (!cancelled) onStatus?.(error instanceof Error ? error.message : 'Export compositor failed') })
-    return () => { cancelled = true }
-  }, [exportCanvasRef, exportBackground, exportLogo, exportTranslations, drawMushaf, lines.length])
+    compositorRef.current?.destroy()
+    compositorRef.current = null
+    void createExportCompositor({ canvas, width: canvas.width || 1280, height: canvas.height || 720, background: exportBackground, logo: exportLogo, translations: exportTranslations, drawMushaf }).then(compositor => {
+      if (cancelled) compositor.destroy()
+      else compositorRef.current = compositor
+    }).catch(error => { if (!cancelled) onStatus?.(error instanceof Error ? error.message : 'Export compositor failed') })
+    return () => { cancelled = true; compositorRef.current?.destroy(); compositorRef.current = null }
+  }, [exportCanvasRef, exportBackground, exportLogo, exportTranslations, drawMushaf, lines.length, onStatus])
 
   React.useLayoutEffect(() => { const word = activeWordRef.current, pageEl = pageRef.current; if (!showFinger || !word || !pageEl) { setFingerStyle({ opacity: 0 }); return }; const update = () => { const wr = word.getBoundingClientRect(), pr = pageEl.getBoundingClientRect(); setFingerStyle({ opacity: 1, left: `${wr.left - pr.left + wr.width / 2}px`, top: `${wr.bottom - pr.top + 6}px`, transitionDuration: `${Math.max(100, 500 - scrollSpeed * 4)}ms` }) }; update(); window.addEventListener('resize', update); pageEl.addEventListener('scroll', update, { passive: true }); return () => { window.removeEventListener('resize', update); pageEl.removeEventListener('scroll', update) } }, [activeVerse, activeWordIndex, showFinger, scrollSpeed, lines, activeWord])
 
