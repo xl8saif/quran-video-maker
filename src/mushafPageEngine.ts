@@ -1,4 +1,4 @@
-import type { QuranAyah, QuranWord } from './quranData'
+import type { QuranAyah } from './quranData'
 import { groupWordsByLine } from './mushafRenderer'
 
 export type MushafPage = {
@@ -21,7 +21,8 @@ export const MUSHAF_ENGINE_CONFIG: Record<string, MushafEngineConfig> = {
 export function buildMushafPage(ayahs: QuranAyah[], page: number): MushafPage {
   const words = ayahs.flatMap((ayah) => ayah.words.filter((word) => word.page === page))
   const lines = groupWordsByLine(words, page)
-  return { page, lines, verseKeys: [...new Set(words.map((word) => word.verseKey))] }
+  const verseKeys = [...new Set(words.map((word) => word.verseKey))].filter((key): key is string => typeof key === 'string')
+  return { page, lines, verseKeys }
 }
 
 export function getActivePage(ayahs: QuranAyah[], time: number): number | null {
