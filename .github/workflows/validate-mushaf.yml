@@ -1,0 +1,43 @@
+name: Validate Mushaf data
+
+on:
+  push:
+    paths:
+      - 'public/data/mushaf/**'
+      - 'scripts/validate-mushaf-page.mjs'
+      - '.github/workflows/validate-mushaf.yml'
+  pull_request:
+    paths:
+      - 'public/data/mushaf/**'
+      - 'scripts/validate-mushaf-page.mjs'
+      - '.github/workflows/validate-mushaf.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate all JSON Mushaf pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=$(find public/data/mushaf -type f -name '*.json' -print)
+          if [ -z "$files" ]; then
+            echo 'No Mushaf JSON files found; nothing to validate.'
+            exit 0
+          fi
+          status=0
+          while IFS= read -r file; do
+            echo "Validating $file"
+            if ! node scripts/validate-mushaf-page.mjs "$file"; then
+              status=1
+            fi
+          done <<< "$files"
+          exit "$status"
