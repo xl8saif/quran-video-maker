@@ -33,6 +33,12 @@ export function LiveMushafPreview({ styleId, page, accessToken, clientId, active
     return [...map.entries()].sort((a,b) => a[0]-b[0]).map(([line, words]) => [line, words.sort((a,b) => a.position-b.position)] as const)
   }, [verses, styleId])
 
+  const activeWord = React.useMemo(() => {
+    if (!activeVerse) return null
+    const verseWords = verses.find(v => v.verse_key === activeVerse)?.words || []
+    return verseWords[activeWordIndex] || null
+  }, [verses, activeVerse, activeWordIndex])
+
   React.useEffect(() => {
     if (!autoScroll || !activeWordRef.current) return
     const word = activeWordRef.current
@@ -45,7 +51,7 @@ export function LiveMushafPreview({ styleId, page, accessToken, clientId, active
     if (Math.abs(delta) > pageRect.height * 0.08) {
       pageEl.scrollBy({ top: delta * (0.45 + scrollSpeed / 200), behavior: 'smooth' })
     }
-  }, [activeVerse, activeWordIndex, autoScroll, scrollSpeed])
+  }, [activeVerse, activeWordIndex, autoScroll, scrollSpeed, activeWord])
 
   React.useLayoutEffect(() => {
     const word = activeWordRef.current
@@ -56,10 +62,10 @@ export function LiveMushafPreview({ styleId, page, accessToken, clientId, active
       setFingerStyle({ opacity: 1, left: `${wr.left - pr.left + wr.width / 2}px`, top: `${wr.bottom - pr.top + 6}px`, transitionDuration: `${Math.max(100, 500 - scrollSpeed * 4)}ms` })
     }
     update()
-    const onResize = () => update()
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [activeVerse, activeWordIndex, showFinger, scrollSpeed, lines])
+    window.addEventListener('resize', update)
+    pageEl.addEventListener('scroll', update, { passive: true })
+    return () => { window.removeEventListener('resize', update); pageEl.removeEventListener('scroll', update) }
+  }, [activeVerse, activeWordIndex, showFinger, scrollSpeed, lines, activeWord])
 
   if (loading) return <div className="live-mushaf-state">Loading verified Mushaf page {page}…</div>
   if (error) return <div className="live-mushaf-state error"><strong>Live Mushaf not loaded</strong><span>{error}</span><small>Enter your Quran Foundation credentials in Settings. They are kept in this browser and are not committed to GitHub.</small></div>
@@ -71,7 +77,10 @@ export function LiveMushafPreview({ styleId, page, accessToken, clientId, active
     {lines.map(([lineNumber, words]) => {
       const active = activeVerse ? words.some(w => w.verseKey === activeVerse) : false
       return <div key={lineNumber} className={`live-quran-line ${active ? 'active-line' : ''}`} style={active ? ({ '--highlight': highlight } as React.CSSProperties) : undefined}>
-        {words.map((w, i) => <span ref={w.verseKey === activeVerse && i === activeWordIndex ? activeWordRef : null} key={`${w.verseKey}-${w.position}`} className={w.verseKey === activeVerse && i === activeWordIndex ? 'active-live-word' : w.verseKey === activeVerse ? 'active-live-word-soft' : ''}>{w.text} </span>)}
+        {words.map((w, i) => {
+          const isActiveWord = Boolean(activeVerse && w.verseKey === activeVerse && activeWord && w.position === activeWord.position)
+          return <span ref={isActiveWord ? activeWordRef : null} key={`${w.verseKey}-${w.position}`} className={isActiveWord ? 'active-live-word' : w.verseKey === activeVerse ? 'active-live-word-soft' : ''}>{w.text} </span>
+        })}
       </div>
     })}
   </div>
