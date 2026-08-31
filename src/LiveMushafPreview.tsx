@@ -2,9 +2,9 @@ import React from 'react'
 import type { MushafStyleId } from './mushafStyles'
 import { fetchPage, type ApiVerse } from './mushafApi'
 
-type Props = { styleId: MushafStyleId; page: number; accessToken: string; clientId: string; activeVerse?: string; highlight: string; onStatus?: (message: string) => void }
+type Props = { styleId: MushafStyleId; page: number; accessToken: string; clientId: string; activeVerse?: string; activeWordIndex?: number; highlight: string; onStatus?: (message: string) => void }
 
-export function LiveMushafPreview({ styleId, page, accessToken, clientId, activeVerse, highlight, onStatus }: Props) {
+export function LiveMushafPreview({ styleId, page, accessToken, clientId, activeVerse, activeWordIndex = 0, highlight, onStatus }: Props) {
   const [verses, setVerses] = React.useState<ApiVerse[]>([])
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -38,7 +38,7 @@ export function LiveMushafPreview({ styleId, page, accessToken, clientId, active
     {lines.map(([lineNumber, words]) => {
       const active = activeVerse ? words.some(w => w.verseKey === activeVerse) : false
       return <div key={lineNumber} className={`live-quran-line ${active ? 'active-line' : ''}`} style={active ? ({ '--highlight': highlight } as React.CSSProperties) : undefined}>
-        {words.map((w, i) => <span key={`${w.verseKey}-${i}`} className={w.verseKey === activeVerse ? 'active-live-word' : ''}>{w.text} </span>)}
+        {words.map((w, i) => <span key={`${w.verseKey}-${i}`} className={w.verseKey === activeVerse && i === activeWordIndex ? 'active-live-word' : w.verseKey === activeVerse ? 'active-live-word-soft' : ''}>{w.text} </span>)}
       </div>
     })}
   </div>
