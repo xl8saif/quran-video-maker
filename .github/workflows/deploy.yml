@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Build deployment artifact
 
 on:
   push:
@@ -7,11 +7,9 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: deployment-build
   cancel-in-progress: true
 
 jobs:
@@ -24,18 +22,10 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: npm
       - name: Install dependencies
         run: npm install
-      - name: Build
+      - name: Type-check
+        run: npm run typecheck
+      - name: Production build
         run: npm run build
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
