@@ -21,30 +21,30 @@ export function createAppRuntime(): AppRuntime {
   let state: ExportPanelState = { status: 'idle', progress: 0, elapsed: 0, duration: 0 }
   const listeners = new Set<(state: ExportPanelState, options: ExportPanelOptions) => void>()
   let timer: number | undefined
+  let stopTimeout: number | undefined
   let recorder: MediaRecorder | undefined
   let stream: MediaStream | undefined
   let media: AppRuntimeMedia | null = null
   let chunks: BlobPart[] = []
+  let runId = 0
 
   const emit = () => listeners.forEach(listener => listener(state, options))
   const stopTimer = () => { if (timer !== undefined) window.clearInterval(timer); timer = undefined }
+  const stopTimeoutTimer = () => { if (stopTimeout !== undefined) window.clearTimeout(stopTimeout); stopTimeout = undefined }
+  const cleanupStream = () => { stream?.getTracks().forEach(track => track.stop()); stream = undefined }
   const setMedia = (next: AppRuntimeMedia | null) => { media = next }
 
   const startExport = (nextOptions: ExportPanelOptions) => {
-    stopTimer()
-    if (recorder && recorder.state !== 'inactive') recorder.stop()
-    stream?.getTracks().forEach(track => track.stop())
+    stopTimer(); stopTimeoutTimer(); cleanupStream()
+    const thisRun = ++runId
+    if (recorder && recorder.state !== 'inactive') { recorder.onstop = null; recorder.stop() }
+    recorder = undefined
     options = { ...nextOptions }
-    if (!media) {
-      state = { status: 'error', progress: 0, elapsed: 0, duration: 0, error: 'Export canvas is not available.' }
-      emit()
-      return
-    }
+    if (!media) { state = { status: 'error', progress: 0, elapsed: 0, duration: 0, error: 'Export canvas is not available.' }; emit(); return }
 
     const sizes: Record<ExportPanelOptions['resolution'], [number, number]> = { '720p': [1280, 720], '1080p': [1920, 1080], '1440p': [2560, 1440], '2160p': [3840, 2160] }
     const [width, height] = sizes[options.resolution]
-    media.canvas.width = width
-    media.canvas.height = height
+    media.canvas.width = width; media.canvas.height = height
     stream = createCanvasAudioStream(media.canvas, media.audio, options.fps)
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm'
     recorder = new MediaRecorder(stream, { mimeType })
@@ -52,41 +52,40 @@ export function createAppRuntime(): AppRuntime {
     const duration = media.audio?.duration && Number.isFinite(media.audio.duration) ? media.audio.duration * 1000 : 30000
     const started = performance.now()
 
-    recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data) }
-    recorder.onerror = () => { stopTimer(); state = { ...state, status: 'error', error: recorder?.error?.message ?? 'MediaRecorder failed.' }; emit() }
+    recorder.ondataavailable = event => { if (thisRun === runId && event.data.size) chunks.push(event.data) }
+    recorder.onerror = () => { if (thisRun !== runId) return; stopTimer(); stopTimeoutTimer(); state = { ...state, status: 'error', error: recorder?.error?.message ?? 'MediaRecorder failed.' }; emit(); cleanupStream(); recorder = undefined }
     recorder.onstop = () => {
-      stopTimer()
-      if (state.status === 'cancelled') return
+      if (thisRun !== runId) return
+      stopTimer(); stopTimeoutTimer(); media?.audio?.pause()
+      if (state.status === 'cancelled') { cleanupStream(); recorder = undefined; return }
       const blobUrl = URL.createObjectURL(new Blob(chunks, { type: mimeType }))
       state = { ...state, status: 'ready', progress: 100, elapsed: duration, duration, blobUrl }
-      stream?.getTracks().forEach(track => track.stop())
-      stream = undefined
-      recorder = undefined
-      emit()
+      cleanupStream(); recorder = undefined; emit()
     }
 
-    state = { status: 'recording', progress: 0, elapsed: 0, duration }
-    emit()
+    state = { status: 'recording', progress: 0, elapsed: 0, duration }; emit()
     recorder.start(250)
-    if (media.audio) { media.audio.currentTime = 0; void media.audio.play() }
+    if (media.audio) { media.audio.currentTime = 0; media.audio.playbackRate = 1; void media.audio.play() }
     timer = window.setInterval(() => {
+      if (thisRun !== runId) return
       const elapsed = Math.min(duration, performance.now() - started)
       state = { ...state, elapsed, progress: duration ? elapsed / duration * 100 : 0 }
       emit()
     }, 100)
-    window.setTimeout(() => { if (recorder?.state !== 'inactive') recorder.stop(); media?.audio?.pause() }, duration)
+    stopTimeout = window.setTimeout(() => { if (thisRun === runId && recorder?.state !== 'inactive') { media?.audio?.pause(); recorder?.stop() } }, duration)
   }
 
   const cancelExport = () => {
-    stopTimer()
-    media?.audio?.pause()
-    if (recorder && recorder.state !== 'inactive') recorder.stop()
-    stream?.getTracks().forEach(track => track.stop())
-    stream = undefined
-    recorder = undefined
-    state = { ...state, status: 'cancelled' }
-    emit()
+    ++runId
+    stopTimer(); stopTimeoutTimer(); media?.audio?.pause()
+    if (recorder && recorder.state !== 'inactive') {
+      state = { ...state, status: 'cancelled' }
+      emit()
+      recorder.stop()
+    } else {
+      cleanupStream(); state = { ...state, status: 'cancelled' }; emit()
+    }
   }
 
-  return { get state() { return state }, get options() { return options }, setMedia, startExport, cancelExport, subscribe(listener) { listeners.add(listener); listener(state, options); return () => listeners.delete(listener) }, destroy() { stopTimer(); if (recorder && recorder.state !== 'inactive') recorder.stop(); stream?.getTracks().forEach(track => track.stop()); listeners.clear(); media = null } }
+  return { get state() { return state }, get options() { return options }, setMedia, startExport, cancelExport, subscribe(listener) { listeners.add(listener); listener(state, options); return () => listeners.delete(listener) }, destroy() { ++runId; stopTimer(); stopTimeoutTimer(); media?.audio?.pause(); if (recorder && recorder.state !== 'inactive') recorder.stop(); cleanupStream(); listeners.clear(); media = null } }
 }
