@@ -44,56 +44,26 @@ export function LiveMushafPreview({ styleId, page, accessToken, clientId, active
     const word = activeWordRef.current
     const pageEl = pageRef.current
     if (!pageEl) return
-    const pageRect = pageEl.getBoundingClientRect()
-    const wordRect = word.getBoundingClientRect()
-    const targetTop = pageRect.top + pageRect.height * 0.48
-    const delta = wordRect.top - targetTop
-    if (Math.abs(delta) > pageRect.height * 0.08) {
-      pageEl.scrollBy({ top: delta * (0.45 + scrollSpeed / 200), behavior: 'smooth' })
-    }
+    const pageRect = pageEl.getBoundingClientRect(); const wordRect = word.getBoundingClientRect()
+    const targetTop = pageRect.top + pageRect.height * 0.48; const delta = wordRect.top - targetTop
+    if (Math.abs(delta) > pageRect.height * 0.08) pageEl.scrollBy({ top: delta * (0.45 + scrollSpeed / 200), behavior: 'smooth' })
   }, [activeVerse, activeWordIndex, autoScroll, scrollSpeed, activeWord])
-
-  React.useLayoutEffect(() => {
-    const word = activeWordRef.current
-    const pageEl = pageRef.current
-    if (!showFinger || !word || !pageEl) { setFingerStyle({ opacity: 0 }); return }
-    const update = () => {
-      const wr = word.getBoundingClientRect(); const pr = pageEl.getBoundingClientRect()
-      setFingerStyle({ opacity: 1, left: `${wr.left - pr.left + wr.width / 2}px`, top: `${wr.bottom - pr.top + 6}px`, transitionDuration: `${Math.max(100, 500 - scrollSpeed * 4)}ms` })
-    }
-    update()
-    window.addEventListener('resize', update)
-    pageEl.addEventListener('scroll', update, { passive: true })
-    return () => { window.removeEventListener('resize', update); pageEl.removeEventListener('scroll', update) }
-  }, [activeVerse, activeWordIndex, showFinger, scrollSpeed, lines, activeWord])
 
   React.useEffect(() => {
     const canvas = exportCanvasRef?.current
     if (!canvas || !lines.length) return
-    const width = canvas.width || 1280
-    const height = canvas.height || 720
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = '#f7f1e4'
-    ctx.fillRect(0, 0, width, height)
-    ctx.fillStyle = '#17120c'
-    ctx.textAlign = 'right'
-    ctx.direction = 'rtl'
-    const lineHeight = Math.max(34, height / Math.max(lines.length + 2, 10))
-    const startY = Math.max(55, (height - lineHeight * lines.length) / 2 + lineHeight)
-    lines.forEach(([lineNumber, words], index) => {
-      const isActive = activeVerse ? words.some(w => w.verseKey === activeVerse) : false
-      let x = width - 70
-      const y = startY + index * lineHeight
+    const ctx = canvas.getContext('2d'); if (!ctx) return
+    const width = canvas.width || 1280; const height = canvas.height || 720
+    ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#f7f1e4'; ctx.fillRect(0, 0, width, height)
+    ctx.fillStyle = '#17120c'; ctx.textAlign = 'right'; ctx.direction = 'rtl'
+    const lineHeight = Math.max(34, height / Math.max(lines.length + 2, 10)); const startY = Math.max(55, (height - lineHeight * lines.length) / 2 + lineHeight)
+    lines.forEach(([, words], index) => {
+      const isActive = activeVerse ? words.some(w => w.verseKey === activeVerse) : false; let x = width - 70; const y = startY + index * lineHeight
       ctx.font = `${Math.max(24, Math.min(52, width / 25))}px serif`
       words.forEach(word => {
         const active = Boolean(activeVerse && word.verseKey === activeVerse && activeWord && word.position === activeWord.position)
-        ctx.fillStyle = active ? highlight : isActive ? '#806b45' : '#17120c'
-        ctx.fillText(word.text, x, y)
-        x -= ctx.measureText(word.text + ' ').width
+        ctx.fillStyle = active ? highlight : isActive ? '#806b45' : '#17120c'; ctx.fillText(word.text, x, y); x -= ctx.measureText(word.text + ' ').width
       })
-      void lineNumber
     })
   }, [exportCanvasRef, lines, activeVerse, activeWord, highlight])
 
