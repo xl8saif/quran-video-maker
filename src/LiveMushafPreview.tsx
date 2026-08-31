@@ -1,10 +1,14 @@
 import React from 'react'
 import type { MushafStyleId } from './mushafStyles'
 import { fetchPage, type ApiVerse } from './mushafApi'
+import { createExportCompositor } from './exportCompositor'
 
-type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null> }
+type ExportMedia = { url?: string; kind?: 'image' | 'video' | 'upload'; opacity?: number; fit?: 'cover' | 'contain' | 'fill'; x?: number; y?: number }
+type ExportLogo = { url?: string; opacity?: number; size?: number; x?: number; y?: number }
+type ExportTranslation = { language: string; text: string }
+type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null>; exportBackground?: ExportMedia; exportLogo?: ExportLogo; exportTranslations?: ExportTranslation[] }
 
-export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef }: Props) {
+export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [] }: Props) {
   const [verses, setVerses] = React.useState<ApiVerse[]>([])
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -27,16 +31,19 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
 
   const activeWord = React.useMemo(() => activeVerse ? (verses.find(v => v.verse_key === activeVerse)?.words || [])[activeWordIndex] || null : null, [verses, activeVerse, activeWordIndex])
 
-  React.useEffect(() => {
-    const canvas = exportCanvasRef?.current
-    if (!canvas || !lines.length) return
-    const ctx = canvas.getContext('2d'); if (!ctx) return
-    const width = canvas.width || 1280, height = canvas.height || 720
-    ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#f7f1e4'; ctx.fillRect(0, 0, width, height)
+  const drawMushaf = React.useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.fillStyle = '#17120c'; ctx.textAlign = 'right'; ctx.direction = 'rtl'
     const lineHeight = Math.max(34, height / Math.max(lines.length + 2, 10)); const startY = Math.max(55, (height - lineHeight * lines.length) / 2 + lineHeight)
     lines.forEach(([, words], index) => { const isActive = activeVerse ? words.some(w => w.verseKey === activeVerse) : false; let x = width - 70; const y = startY + index * lineHeight; ctx.font = `${Math.max(24, Math.min(52, width / 25))}px serif`; words.forEach(word => { const active = Boolean(activeVerse && word.verseKey === activeVerse && activeWord && word.position === activeWord.position); ctx.fillStyle = active ? highlight : isActive ? '#806b45' : '#17120c'; ctx.fillText(word.text, x, y); x -= ctx.measureText(word.text + ' ').width }) })
-  }, [exportCanvasRef, lines, activeVerse, activeWord, highlight])
+  }, [lines, activeVerse, activeWord, highlight])
+
+  React.useEffect(() => {
+    const canvas = exportCanvasRef?.current
+    if (!canvas || !lines.length) return
+    let cancelled = false
+    void createExportCompositor({ canvas, width: canvas.width || 1280, height: canvas.height || 720, background: exportBackground, logo: exportLogo, translations: exportTranslations, drawMushaf }).then(compositor => { if (!cancelled) compositor.draw() })
+    return () => { cancelled = true }
+  }, [exportCanvasRef, exportBackground, exportLogo, exportTranslations, drawMushaf, lines.length])
 
   React.useLayoutEffect(() => { const word = activeWordRef.current, pageEl = pageRef.current; if (!showFinger || !word || !pageEl) { setFingerStyle({ opacity: 0 }); return }; const update = () => { const wr = word.getBoundingClientRect(), pr = pageEl.getBoundingClientRect(); setFingerStyle({ opacity: 1, left: `${wr.left - pr.left + wr.width / 2}px`, top: `${wr.bottom - pr.top + 6}px`, transitionDuration: `${Math.max(100, 500 - scrollSpeed * 4)}ms` }) }; update(); window.addEventListener('resize', update); pageEl.addEventListener('scroll', update, { passive: true }); return () => { window.removeEventListener('resize', update); pageEl.removeEventListener('scroll', update) } }, [activeVerse, activeWordIndex, showFinger, scrollSpeed, lines, activeWord])
 
