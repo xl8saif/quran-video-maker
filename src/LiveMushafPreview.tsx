@@ -2,9 +2,9 @@ import React from 'react'
 import type { MushafStyleId } from './mushafStyles'
 import { fetchPage, type ApiVerse } from './mushafApi'
 
-type Props = { styleId: MushafStyleId; page: number; accessToken: string; clientId: string; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void }
+type Props = { styleId: MushafStyleId; page: number; accessToken: string; clientId: string; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null> }
 
-export function LiveMushafPreview({ styleId, page, accessToken, clientId, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus }: Props) {
+export function LiveMushafPreview({ styleId, page, accessToken, clientId, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef }: Props) {
   const [verses, setVerses] = React.useState<ApiVerse[]>([])
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -67,6 +67,36 @@ export function LiveMushafPreview({ styleId, page, accessToken, clientId, active
     return () => { window.removeEventListener('resize', update); pageEl.removeEventListener('scroll', update) }
   }, [activeVerse, activeWordIndex, showFinger, scrollSpeed, lines, activeWord])
 
+  React.useEffect(() => {
+    const canvas = exportCanvasRef?.current
+    if (!canvas || !lines.length) return
+    const width = canvas.width || 1280
+    const height = canvas.height || 720
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.clearRect(0, 0, width, height)
+    ctx.fillStyle = '#f7f1e4'
+    ctx.fillRect(0, 0, width, height)
+    ctx.fillStyle = '#17120c'
+    ctx.textAlign = 'right'
+    ctx.direction = 'rtl'
+    const lineHeight = Math.max(34, height / Math.max(lines.length + 2, 10))
+    const startY = Math.max(55, (height - lineHeight * lines.length) / 2 + lineHeight)
+    lines.forEach(([lineNumber, words], index) => {
+      const isActive = activeVerse ? words.some(w => w.verseKey === activeVerse) : false
+      let x = width - 70
+      const y = startY + index * lineHeight
+      ctx.font = `${Math.max(24, Math.min(52, width / 25))}px serif`
+      words.forEach(word => {
+        const active = Boolean(activeVerse && word.verseKey === activeVerse && activeWord && word.position === activeWord.position)
+        ctx.fillStyle = active ? highlight : isActive ? '#806b45' : '#17120c'
+        ctx.fillText(word.text, x, y)
+        x -= ctx.measureText(word.text + ' ').width
+      })
+      void lineNumber
+    })
+  }, [exportCanvasRef, lines, activeVerse, activeWord, highlight])
+
   if (loading) return <div className="live-mushaf-state">Loading verified Mushaf page {page}…</div>
   if (error) return <div className="live-mushaf-state error"><strong>Live Mushaf not loaded</strong><span>{error}</span><small>Enter your Quran Foundation credentials in Settings. They are kept in this browser and are not committed to GitHub.</small></div>
   if (!lines.length) return <div className="live-mushaf-state">No page data returned.</div>
@@ -77,11 +107,12 @@ export function LiveMushafPreview({ styleId, page, accessToken, clientId, active
     {lines.map(([lineNumber, words]) => {
       const active = activeVerse ? words.some(w => w.verseKey === activeVerse) : false
       return <div key={lineNumber} className={`live-quran-line ${active ? 'active-line' : ''}`} style={active ? ({ '--highlight': highlight } as React.CSSProperties) : undefined}>
-        {words.map((w, i) => {
+        {words.map(w => {
           const isActiveWord = Boolean(activeVerse && w.verseKey === activeVerse && activeWord && w.position === activeWord.position)
           return <span ref={isActiveWord ? activeWordRef : null} key={`${w.verseKey}-${w.position}`} className={isActiveWord ? 'active-live-word' : w.verseKey === activeVerse ? 'active-live-word-soft' : ''}>{w.text} </span>
         })}
       </div>
     })}
+    {exportCanvasRef && <canvas ref={exportCanvasRef} width={1280} height={720} aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />}
   </div>
 }
