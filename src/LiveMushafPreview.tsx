@@ -41,7 +41,7 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
     const canvas = exportCanvasRef?.current
     if (!canvas || !lines.length) return
     let cancelled = false
-    void createExportCompositor({ canvas, width: canvas.width || 1280, height: canvas.height || 720, background: exportBackground, logo: exportLogo, translations: exportTranslations, drawMushaf }).then(compositor => { if (!cancelled) compositor.draw() })
+    void createExportCompositor({ canvas, width: canvas.width || 1280, height: canvas.height || 720, background: exportBackground, logo: exportLogo, translations: exportTranslations, drawMushaf }).then(compositor => { if (!cancelled) compositor.draw() }).catch(error => { if (!cancelled) onStatus?.(error instanceof Error ? error.message : 'Export compositor failed') })
     return () => { cancelled = true }
   }, [exportCanvasRef, exportBackground, exportLogo, exportTranslations, drawMushaf, lines.length])
 
