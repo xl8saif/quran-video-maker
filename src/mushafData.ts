@@ -33,3 +33,7 @@ export const mushafData = {
 export function getMushafConfig(id: MushafId) {
   return mushafData[id]
 }
+
+export function getMushafPageCount(id: MushafId) {
+  return mushafData[id].totalPages
+}
