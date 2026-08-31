@@ -1,0 +1,41 @@
+{
+  "pageNumber": 1,
+  "style": "hafs",
+  "source": {
+    "name": "Tanzil Quran Text",
+    "url": "https://tanzil.net/",
+    "license": "CC BY 3.0",
+    "notice": "Verbatim Quran text; do not modify. See Tanzil terms before redistribution."
+  },
+  "words": [
+    {"id":"1:1:1","verseKey":"1:1","text":"بِسْمِ","position":1,"pageNumber":1,"lineNumber":1},
+    {"id":"1:1:2","verseKey":"1:1","text":"اللَّهِ","position":2,"pageNumber":1,"lineNumber":1},
+    {"id":"1:1:3","verseKey":"1:1","text":"الرَّحْمَٰنِ","position":3,"pageNumber":1,"lineNumber":1},
+    {"id":"1:1:4","verseKey":"1:1","text":"الرَّحِيمِ","position":4,"pageNumber":1,"lineNumber":1},
+    {"id":"1:2:1","verseKey":"1:2","text":"الْحَمْدُ","position":1,"pageNumber":1,"lineNumber":2},
+    {"id":"1:2:2","verseKey":"1:2","text":"لِلَّهِ","position":2,"pageNumber":1,"lineNumber":2},
+    {"id":"1:2:3","verseKey":"1:2","text":"رَبِّ","position":3,"pageNumber":1,"lineNumber":2},
+    {"id":"1:2:4","verseKey":"1:2","text":"الْعَالَمِينَ","position":4,"pageNumber":1,"lineNumber":2},
+    {"id":"1:3:1","verseKey":"1:3","text":"الرَّحْمَٰنِ","position":1,"pageNumber":1,"lineNumber":3},
+    {"id":"1:3:2","verseKey":"1:3","text":"الرَّحِيمِ","position":2,"pageNumber":1,"lineNumber":3},
+    {"id":"1:4:1","verseKey":"1:4","text":"مَالِكِ","position":1,"pageNumber":1,"lineNumber":4},
+    {"id":"1:4:2","verseKey":"1:4","text":"يَوْمِ","position":2,"pageNumber":1,"lineNumber":4},
+    {"id":"1:4:3","verseKey":"1:4","text":"الدِّينِ","position":3,"pageNumber":1,"lineNumber":4},
+    {"id":"1:5:1","verseKey":"1:5","text":"إِيَّاكَ","position":1,"pageNumber":1,"lineNumber":5},
+    {"id":"1:5:2","verseKey":"1:5","text":"نَعْبُدُ","position":2,"pageNumber":1,"lineNumber":5},
+    {"id":"1:5:3","verseKey":"1:5","text":"وَإِيَّاكَ","position":3,"pageNumber":1,"lineNumber":5},
+    {"id":"1:5:4","verseKey":"1:5","text":"نَسْتَعِينُ","position":4,"pageNumber":1,"lineNumber":5},
+    {"id":"1:6:1","verseKey":"1:6","text":"اهْدِنَا","position":1,"pageNumber":1,"lineNumber":6},
+    {"id":"1:6:2","verseKey":"1:6","text":"الصِّرَاطَ","position":2,"pageNumber":1,"lineNumber":6},
+    {"id":"1:6:3","verseKey":"1:6","text":"الْمُسْتَقِيمَ","position":3,"pageNumber":1,"lineNumber":6},
+    {"id":"1:7:1","verseKey":"1:7","text":"صِرَاطَ","position":1,"pageNumber":1,"lineNumber":7},
+    {"id":"1:7:2","verseKey":"1:7","text":"الَّذِينَ","position":2,"pageNumber":1,"lineNumber":7},
+    {"id":"1:7:3","verseKey":"1:7","text":"أَنْعَمْتَ","position":3,"pageNumber":1,"lineNumber":7},
+    {"id":"1:7:4","verseKey":"1:7","text":"عَلَيْهِمْ","position":4,"pageNumber":1,"lineNumber":7},
+    {"id":"1:7:5","verseKey":"1:7","text":"غَيْرِ","position":5,"pageNumber":7,"lineNumber":7},
+    {"id":"1:7:6","verseKey":"1:7","text":"الْمَغْضُوبِ","position":6,"pageNumber":1,"lineNumber":7},
+    {"id":"1:7:7","verseKey":"1:7","text":"عَلَيْهِمْ","position":7,"pageNumber":1,"lineNumber":7},
+    {"id":"1:7:8","verseKey":"1:7","text":"وَلَا","position":8,"pageNumber":1,"lineNumber":7},
+    {"id":"1:7:9","verseKey":"1:7","text":"الضَّالِّينَ","position":9,"pageNumber":1,"lineNumber":7}
+  ]
+}
