@@ -41,8 +41,12 @@ export function validateTranslationFile(input: unknown): TranslationPack {
     const surah = e.surah;
     const ayah = e.ayah;
     const text = e.text;
-    if (!Number.isInteger(surah) || surah < 1 || surah > 114) throw new Error(`Entry ${index + 1}: invalid surah.`);
-    if (!Number.isInteger(ayah) || ayah < 1) throw new Error(`Entry ${index + 1}: invalid ayah.`);
+    if (typeof surah !== 'number' || !Number.isInteger(surah) || surah < 1 || surah > 114) {
+      throw new Error(`Entry ${index + 1}: invalid surah.`);
+    }
+    if (typeof ayah !== 'number' || !Number.isInteger(ayah) || ayah < 1) {
+      throw new Error(`Entry ${index + 1}: invalid ayah.`);
+    }
     if (typeof text !== 'string' || !text.trim()) throw new Error(`Entry ${index + 1}: translation text is required.`);
     return { surah, ayah, text };
   });
@@ -98,9 +102,7 @@ export async function importTranslationFile(file: File): Promise<TranslationPack
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error('Only valid JSON translation files are supported in this first importer.');
+    throw new Error('Translation file contains invalid JSON.');
   }
-  const pack = validateTranslationFile(parsed);
-  saveTranslation(pack);
-  return pack;
+  return validateTranslationFile(parsed);
 }
