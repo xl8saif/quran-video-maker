@@ -35,13 +35,16 @@ export function validateTranslationFile(input: unknown): TranslationPack {
   if (!value.name?.trim()) throw new Error('Translation name is required.');
   if (!Array.isArray(value.entries)) throw new Error('Translation entries must be an array.');
 
-  const entries = value.entries.map((entry, index) => {
+  const entries: TranslationEntry[] = value.entries.map((entry, index): TranslationEntry => {
     if (!entry || typeof entry !== 'object') throw new Error(`Entry ${index + 1} is invalid.`);
     const e = entry as Partial<TranslationEntry>;
-    if (!Number.isInteger(e.surah) || e.surah < 1 || e.surah > 114) throw new Error(`Entry ${index + 1}: invalid surah.`);
-    if (!Number.isInteger(e.ayah) || e.ayah < 1) throw new Error(`Entry ${index + 1}: invalid ayah.`);
-    if (typeof e.text !== 'string' || !e.text.trim()) throw new Error(`Entry ${index + 1}: translation text is required.`);
-    return { surah: e.surah, ayah: e.ayah, text: e.text };
+    const surah = e.surah;
+    const ayah = e.ayah;
+    const text = e.text;
+    if (!Number.isInteger(surah) || surah < 1 || surah > 114) throw new Error(`Entry ${index + 1}: invalid surah.`);
+    if (!Number.isInteger(ayah) || ayah < 1) throw new Error(`Entry ${index + 1}: invalid ayah.`);
+    if (typeof text !== 'string' || !text.trim()) throw new Error(`Entry ${index + 1}: translation text is required.`);
+    return { surah, ayah, text };
   });
 
   const seen = new Set<string>();
