@@ -52,7 +52,7 @@ export async function recordMediaStream(stream: MediaStream, options: StreamExpo
     const started = performance.now()
     const timer = window.setInterval(() => onProgress?.(Math.min(1, (performance.now() - started) / options.durationMs)), 100)
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data) }
-    recorder.onerror = () => { window.clearInterval(timer); reject(recorder.error ?? new Error('MediaRecorder failed.')) }
+    recorder.onerror = event => { window.clearInterval(timer); reject(event.error ?? new Error('MediaRecorder failed.')) }
     recorder.onstop = () => { window.clearInterval(timer); onProgress?.(1); resolve({ blob: new Blob(chunks, { type: mimeType }), mimeType }) }
     recorder.start(250)
     window.setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop() }, options.durationMs)

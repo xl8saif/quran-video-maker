@@ -39,7 +39,7 @@ export function createAppRuntime(): AppRuntime {
     const duration = media.audio?.duration && Number.isFinite(media.audio.duration) && media.audio.duration > 0 ? media.audio.duration * 1000 : 30000
     const started = performance.now()
     recorder.ondataavailable = event => { if (thisRun === runId && event.data.size) chunks.push(event.data) }
-    recorder.onerror = () => { if (thisRun !== runId) return; stopTimer(); stopTimeoutTimer(); state = { ...state, status: 'error', error: recorder?.error?.message ?? 'MediaRecorder failed.' }; cleanupStream(); recorder = undefined; emit() }
+    recorder.onerror = event => { if (thisRun !== runId) return; stopTimer(); stopTimeoutTimer(); state = { ...state, status: 'error', error: event.error?.message ?? 'MediaRecorder failed.' }; cleanupStream(); recorder = undefined; emit() }
     recorder.onstop = () => {
       const current = thisRun === runId
       stopTimer(); stopTimeoutTimer(); media?.audio?.pause(); cleanupStream()
