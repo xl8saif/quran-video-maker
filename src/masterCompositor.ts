@@ -14,6 +14,8 @@ export interface MasterCompositeOptions {
   translationOptions?:TranslationRenderOptions
 }
 
+const defaultTranslationOptions: TranslationRenderOptions = { language: 'en' }
+
 export function renderMasterFrame(ctx:CanvasRenderingContext2D, pageImage:HTMLImageElement, page:QuranPage|undefined, time:number, options:MasterCompositeOptions){
   if(!pageImage.naturalWidth || !page)return
   const frame=getSynchronizedFrame(page,time,options.viewportHeight,options.contentHeight,options.currentScroll??0)
@@ -26,5 +28,5 @@ export function renderMasterFrame(ctx:CanvasRenderingContext2D, pageImage:HTMLIm
   if(line)drawActiveLine(ctx,0,line.y,page.width,line.height)
   if(word){drawActiveWord(ctx,word);if(options.showFinger!==false)drawFinger(ctx,{x:frame.fingerX!,y:frame.fingerY!,angle:-18,scale:1},options.fingerImage)}
   ctx.restore()
-  if(options.translation){renderTranslation(ctx,options.translation,options.translationOptions)}
+  if(options.translation){renderTranslation(ctx,options.translation,options.translationOptions ?? defaultTranslationOptions)}
 }
