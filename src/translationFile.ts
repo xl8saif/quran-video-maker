@@ -9,17 +9,29 @@ export type ImportedTranslation = {
   entries: { surah: number; ayah: number; text: string }[]
 }
 
+type RawTranslationEntry = { surah?: unknown; ayah?: unknown; chapter?: unknown; verse?: unknown; text?: unknown; translation?: unknown }
+
 export async function parseTranslationFile(file: File): Promise<ImportedTranslation> {
   const raw = await file.text()
-  const data = JSON.parse(raw)
-  const meta = Array.isArray(data) ? {} : (data.metadata || data.meta || {})
-  const rows = Array.isArray(data) ? data : (Array.isArray(data.entries) ? data.entries : Object.entries(data.entries || data).map(([key, text]) => {
-    const [surah, ayah] = key.split(':').map(Number)
-    return { surah, ayah, text }
-  }))
+  const data: any = JSON.parse(raw)
+  const meta: any = Array.isArray(data) ? {} : (data.metadata || data.meta || {})
+  const rows: RawTranslationEntry[] = Array.isArray(data)
+    ? data
+    : (Array.isArray(data.entries)
+      ? data.entries
+      : Object.entries(data.entries || data).map(([key, text]) => {
+          const [surah, ayah] = key.split(':').map(Number)
+          return { surah, ayah, text }
+        }))
   const language = String(meta.language || data.language || 'en') as TranslationLanguage
   if (!['en', 'ur', 'ar'].includes(language)) throw new Error('Translation language must be en, ur, or ar.')
-  const entries = rows.map((x: any) => ({ surah: Number(x.surah ?? x.chapter), ayah: Number(x.ayah ?? x.verse), text: String(x.text ?? x.translation ?? '') })).filter(x => Number.isInteger(x.surah) && x.surah > 0 && Number.isInteger(x.ayah) && x.ayah > 0 && x.text.trim())
+  const entries = rows
+    .map((x: RawTranslationEntry) => ({
+      surah: Number(x.surah ?? x.chapter),
+      ayah: Number(x.ayah ?? x.verse),
+      text: String(x.text ?? x.translation ?? ''),
+    }))
+    .filter((x: { surah: number; ayah: number; text: string }) => Number.isInteger(x.surah) && x.surah > 0 && Number.isInteger(x.ayah) && x.ayah > 0 && x.text.trim())
   if (!entries.length) throw new Error('No valid translation entries were found.')
   const seen = new Set<string>()
   for (const entry of entries) {
