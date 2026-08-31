@@ -1,10 +1,6 @@
 import type { QuranAyah, QuranWord } from './quranData'
 import { MUSHAF_ENGINE_CONFIG } from './mushafPageEngine'
 
-/**
- * Normalized response contract for a verified Mushaf data source.
- * The application never edits Quran text during normalization.
- */
 export type MushafApiWord = {
   id: number
   position: number
@@ -24,9 +20,7 @@ export type MushafApiVerse = {
   words?: MushafApiWord[]
 }
 
-export type MushafPagePayload = {
-  verses: MushafApiVerse[]
-}
+export type MushafPagePayload = { verses: MushafApiVerse[] }
 
 export type MushafAdapterOptions = {
   endpoint: string
@@ -40,14 +34,12 @@ export function getMushafId(styleId: keyof typeof MUSHAF_ENGINE_CONFIG) {
   return MUSHAF_ENGINE_CONFIG[styleId].mushafId
 }
 
-/** Convert an authenticated API payload into the app's immutable internal model. */
 export function normalizeMushafPage(
   payload: MushafPagePayload,
   styleId: keyof typeof MUSHAF_ENGINE_CONFIG,
   translations: MushafAdapterOptions['translationByVerse'] = {},
 ): QuranAyah[] {
   const useIndoPak = styleId === 'indo-pak-muhammadi'
-
   return payload.verses.map((verse) => ({
     verseKey: verse.verse_key,
     arabic: useIndoPak ? (verse.text_indopak ?? '') : (verse.text_uthmani ?? ''),
@@ -68,15 +60,15 @@ export function normalizeMushafPage(
 }
 
 /**
- * Fetches a page only when the caller explicitly supplies an endpoint and credentials.
- * No credentials are stored in source control.
+ * Fetch a page from an endpoint template such as
+ * https://apis.quran.foundation/content/api/v4/verses/by_page/{page}.
+ * Credentials are supplied at runtime and are never stored in source control.
  */
-export async function fetchMushafPage(
-  page: number,
-  options: MushafAdapterOptions,
-): Promise<MushafPagePayload> {
-  const url = new URL(options.endpoint)
-  url.searchParams.set('page', String(page))
+export async function fetchMushafPage(page: number, options: MushafAdapterOptions): Promise<MushafPagePayload> {
+  const endpoint = options.endpoint.includes('{page}')
+    ? options.endpoint.replace('{page}', String(page))
+    : `${options.endpoint.replace(/\/$/, '')}/${page}`
+  const url = new URL(endpoint)
   url.searchParams.set('mushaf', String(options.mushafId))
   url.searchParams.set('words', 'true')
 
