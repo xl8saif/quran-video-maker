@@ -14,19 +14,17 @@ export interface CanvasAudioStream {
   dispose: () => void
 }
 
-const audioSources = new WeakMap<HTMLMediaElement, { context: AudioContext; source: MediaElementAudioSourceNode; destination: MediaStreamAudioDestinationNode }>()
-
-export function createCanvasAudioStream(canvas: HTMLCanvasElement, audio: HTMLMediaElement | null, frameRate = 30): MediaStream {
-  return createCanvasAudioStreamController(canvas, audio, frameRate).stream
+type AudioGraph = {
+  context: AudioContext
+  source: MediaElementAudioSourceNode
+  destination: MediaStreamAudioDestinationNode
 }
 
-export function createCanvasAudioStreamController(canvas: HTMLCanvasElement, audio: HTMLMediaElement | null, frameRate = 30): CanvasAudioStream {
-  const videoStream = canvas.captureStream(frameRate)
-  if (!audio) return { stream: videoStream, dispose: () => videoStream.getTracks().forEach(track => track.stop()) }
+const audioSources = new WeakMap<HTMLMediaElement, AudioGraph>()
 
+function getAudioGraph(audio: HTMLMediaElement): AudioGraph | null {
   const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-  if (!AudioContextCtor) return { stream: videoStream, dispose: () => videoStream.getTracks().forEach(track => track.stop()) }
-
+  if (!AudioContextCtor) return null
   let graph = audioSources.get(audio)
   if (!graph) {
     const context = new AudioContextCtor()
@@ -37,10 +35,23 @@ export function createCanvasAudioStreamController(canvas: HTMLCanvasElement, aud
     graph = { context, source, destination }
     audioSources.set(audio, graph)
   }
-  graph.destination.stream.getAudioTracks().forEach(track => videoStream.addTrack(track))
+  if (graph.context.state === 'suspended') void graph.context.resume()
+  return graph
+}
+
+export function createCanvasAudioStream(canvas: HTMLCanvasElement, audio: HTMLMediaElement | null, frameRate = 30): MediaStream {
+  return createCanvasAudioStreamController(canvas, audio, frameRate).stream
+}
+
+export function createCanvasAudioStreamController(canvas: HTMLCanvasElement, audio: HTMLMediaElement | null, frameRate = 30): CanvasAudioStream {
+  const videoStream = canvas.captureStream(frameRate)
+  const graph = audio ? getAudioGraph(audio) : null
+  if (graph) {
+    graph.destination.stream.getAudioTracks().forEach(track => videoStream.addTrack(track.clone()))
+  }
   return {
     stream: videoStream,
-    dispose: () => videoStream.getVideoTracks().forEach(track => track.stop()),
+    dispose: () => videoStream.getTracks().forEach(track => track.stop()),
   }
 }
 
