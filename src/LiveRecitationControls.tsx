@@ -9,6 +9,8 @@ type Props = {
   onStatus?: (message: string) => void
 }
 
+const SPEEDS = [0.75, 1, 1.25, 1.5]
+
 export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Props) {
   const audioRef = React.useRef<HTMLAudioElement>(null)
   const statusRef = React.useRef(onStatus)
@@ -19,6 +21,7 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
   const [loadingAudio, setLoadingAudio] = React.useState(false)
   const [playing, setPlaying] = React.useState(false)
   const [currentMs, setCurrentMs] = React.useState(0)
+  const [speed, setSpeed] = React.useState(1)
   const [error, setError] = React.useState('')
 
   React.useEffect(() => { statusRef.current = onStatus }, [onStatus])
@@ -52,6 +55,7 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
       setAudio(result)
       if (audioRef.current) {
         audioRef.current.src = result.audioUrl
+        audioRef.current.playbackRate = speed
         audioRef.current.load()
       }
       statusRef.current?.('Quran Foundation recitation loaded')
@@ -64,6 +68,10 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
     }).finally(() => { if (!cancelled) setLoadingAudio(false) })
     return () => { cancelled = true }
   }, [chapterNumber, reciterId])
+
+  React.useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = speed
+  }, [speed])
 
   const handleTime = (timeMs: number) => {
     setCurrentMs(timeMs)
@@ -97,6 +105,9 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
       <select value={reciterId} disabled={loadingReciters || loadingAudio || !reciters.length} onChange={event => setReciterId(Number(event.target.value))} aria-label="Reciter">
         {!reciters.length && <option value="">{loadingReciters ? 'Loading reciters…' : 'No reciters available'}</option>}
         {reciters.map(reciter => <option key={reciter.id} value={reciter.id}>{reciter.reciter_name || reciter.name || `Reciter ${reciter.id}`}{reciter.style ? ` · ${reciter.style}` : ''}</option>)}
+      </select>
+      <select value={speed} onChange={event => setSpeed(Number(event.target.value))} aria-label="Playback speed">
+        {SPEEDS.map(value => <option key={value} value={value}>{value}×</option>)}
       </select>
     </div>
     <input aria-label="Recitation progress" type="range" min="0" max="100" step="0.1" value={progress} disabled={!audio} onChange={event => seek(Number(event.target.value))}/>
