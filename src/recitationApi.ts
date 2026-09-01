@@ -80,7 +80,7 @@ export async function fetchChapterAudio(
       timestamp_to: number
       duration?: number
       segments?: AudioSegment[]
-    }>
+    }
   }>(`/chapter_reciters/${reciterId}/audio_files/${chapterNumber}?segments=${includeSegments}`, credentials)
 
   const source = data.audio_file ?? data
@@ -103,5 +103,48 @@ export function findActiveTiming(timings: VerseTiming[], timeMs: number) {
     verseKey: verse.verseKey,
     segmentIndex,
     wordIndex: segmentIndex < 0 ? null : verse.segments[segmentIndex][0],
+  }
+}
+
+export type RecitationState = {
+  loading: boolean
+  error: string
+  audio: ChapterAudio | null
+  activeVerse?: string
+  activeWordIndex: number
+}
+
+export function createRecitationController(credentials: QuranApiCredentials) {
+  let state: RecitationState = { loading: false, error: '', audio: null, activeWordIndex: 0 }
+  const listeners = new Set<(state: RecitationState) => void>()
+  const emit = () => listeners.forEach(listener => listener({ ...state }))
+
+  return {
+    subscribe(listener: (state: RecitationState) => void) {
+      listeners.add(listener)
+      listener({ ...state })
+      return () => listeners.delete(listener)
+    },
+    async loadChapter(reciterId: number, chapterNumber: number) {
+      state = { ...state, loading: true, error: '', audio: null, activeVerse: undefined, activeWordIndex: 0 }
+      emit()
+      try {
+        const audio = await fetchChapterAudio(reciterId, chapterNumber, credentials, true)
+        if (!audio.audioUrl) throw new Error('No audio URL was returned for this recitation.')
+        state = { ...state, loading: false, audio }
+      } catch (error) {
+        state = { ...state, loading: false, error: error instanceof Error ? error.message : 'Unable to load recitation.' }
+      }
+      emit()
+      return { ...state }
+    },
+    updateTime(timeMs: number) {
+      if (!state.audio) return
+      const active = findActiveTiming(state.audio.timestamps, timeMs)
+      state = { ...state, activeVerse: active?.verseKey, activeWordIndex: active?.wordIndex ?? 0 }
+      emit()
+    },
+    getState: () => ({ ...state }),
+    destroy() { listeners.clear() },
   }
 }
