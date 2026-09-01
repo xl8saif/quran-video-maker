@@ -1,0 +1,53 @@
+.live-recitation-controls {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(127, 104, 62, 0.24);
+  border-radius: 10px;
+  background: rgba(255, 252, 244, 0.82);
+  box-sizing: border-box;
+}
+
+.live-recitation-controls .recitation-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-recitation-controls select {
+  min-width: 0;
+  flex: 1;
+  height: 34px;
+  border: 1px solid rgba(90, 74, 45, 0.25);
+  border-radius: 7px;
+  padding: 0 8px;
+  background: #fff;
+}
+
+.live-recitation-controls select:last-child {
+  flex: 0 0 64px;
+}
+
+.live-recitation-controls input[type="range"] {
+  display: block;
+  width: 100%;
+  margin: 9px 0 4px;
+}
+
+.live-recitation-controls .hint {
+  display: block;
+  min-height: 16px;
+}
+
+@media (max-width: 640px) {
+  .live-recitation-controls .recitation-row {
+    flex-wrap: wrap;
+  }
+
+  .live-recitation-controls .recitation-row button {
+    flex: 0 0 auto;
+  }
+
+  .live-recitation-controls .recitation-row select:first-of-type {
+    flex: 1 1 150px;
+  }
+}
