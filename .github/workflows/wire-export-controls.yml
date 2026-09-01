@@ -1,0 +1,59 @@
+name: Wire export controls
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Wire export controls into the React UI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/main.tsx')
+          text = path.read_text()
+
+          old_state = "[exporting,setExporting]=React.useState(false),[exportProgress,setExportProgress]=React.useState(0),[exportUrl,setExportUrl]=React.useState<string|null>(null),[recitation,setRecitation]"
+          new_state = "[exporting,setExporting]=React.useState(false),[exportProgress,setExportProgress]=React.useState(0),[exportUrl,setExportUrl]=React.useState<string|null>(null),[exportOptions,setExportOptions]=React.useState<ExportPanelOptions>({resolution:'1080p',fps:30,mushafStyle:defaultMushafStyle,translationLanguage:'none',filename:'quran-video.webm'}),[recitation,setRecitation]"
+          if old_state not in text:
+              raise SystemExit('state anchor not found')
+          text = text.replace(old_state, new_state, 1)
+
+          old_export = "const startExport=()=>{const opts:ExportPanelOptions={resolution:'1080p',fps:30,mushafStyle,translationLanguage:translation==='en+ur'||translation==='en+ur+ar'?'none':translation,filename:'quran-video.webm'};runtimeRef.current.startExport(opts);setStatus('Exporting video…')}"
+          new_export = "const startExport=()=>{runtimeRef.current.startExport({...exportOptions,mushafStyle});setStatus('Exporting video…')}"
+          if old_export not in text:
+              raise SystemExit('startExport anchor not found')
+          text = text.replace(old_export, new_export, 1)
+
+          anchor = '<canvas ref={exportCanvasRef}'
+          if anchor not in text:
+              raise SystemExit('canvas anchor not found')
+          controls = '''<section className="panel-section export-controls"><div className="section-title">Export Video</div><label>Resolution<select value={exportOptions.resolution} onChange={e=>setExportOptions(o=>({...o,resolution:e.target.value as ExportPanelOptions['resolution']}))}><option value="720p">720p</option><option value="1080p">1080p</option><option value="1440p">1440p</option><option value="2160p">4K (2160p)</option></select></label><label>Frame rate<select value={exportOptions.fps} onChange={e=>setExportOptions(o=>({...o,fps:Number(e.target.value) as ExportPanelOptions['fps']}))}><option value={24}>24 FPS</option><option value={30}>30 FPS</option><option value={60}>60 FPS</option></select></label><label>Translation<select value={exportOptions.translationLanguage} onChange={e=>setExportOptions(o=>({...o,translationLanguage:e.target.value as ExportPanelOptions['translationLanguage']}))}><option value="none">None</option><option value="en">English</option><option value="ur">Urdu</option><option value="ar">Arabic</option></select></label><label>Filename<input type="text" value={exportOptions.filename} onChange={e=>setExportOptions(o=>({...o,filename:e.target.value}))} placeholder="quran-video.webm" /></label><div className="export-actions"><button className="primary" type="button" disabled={exporting} onClick={startExport}>{exporting?'Exporting…':'Export Video'}</button>{exporting&&<button className="ghost" type="button" onClick={()=>runtimeRef.current.cancelExport()}>Cancel</button>}</div>{exporting&&<progress max={100} value={exportProgress}/>} {exportUrl&&<a className="download-link" href={exportUrl} download={exportOptions.filename}>Download exported video</a>}</section>'''
+          text = text.replace(anchor, controls + anchor, 1)
+
+          path.write_text(text)
+          PY
+      - name: Verify TypeScript build
+        run: |
+          npm install
+          npx tsc --noEmit
+          npm run build
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.tsx
+          git commit -m 'feat: connect export quality controls to runtime' || exit 0
+          git push
+      - name: Remove temporary workflow
+        run: |
+          git rm .github/workflows/wire-export-controls.yml
+          git commit -m 'chore: remove temporary export wiring workflow'
+          git push
