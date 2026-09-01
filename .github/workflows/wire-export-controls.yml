@@ -32,11 +32,10 @@ jobs:
               raise SystemExit('startExport anchor not found')
           text = text.replace(old_export, new_export, 1)
 
-          anchor = '<canvas ref={exportCanvasRef}'
-          if anchor not in text:
-              raise SystemExit('canvas anchor not found')
           controls = '''<section className="panel-section export-controls"><div className="section-title">Export Video</div><label>Resolution<select value={exportOptions.resolution} onChange={e=>setExportOptions(o=>({...o,resolution:e.target.value as ExportPanelOptions['resolution']}))}><option value="720p">720p</option><option value="1080p">1080p</option><option value="1440p">1440p</option><option value="2160p">4K (2160p)</option></select></label><label>Frame rate<select value={exportOptions.fps} onChange={e=>setExportOptions(o=>({...o,fps:Number(e.target.value) as ExportPanelOptions['fps']}))}><option value={24}>24 FPS</option><option value={30}>30 FPS</option><option value={60}>60 FPS</option></select></label><label>Translation<select value={exportOptions.translationLanguage} onChange={e=>setExportOptions(o=>({...o,translationLanguage:e.target.value as ExportPanelOptions['translationLanguage']}))}><option value="none">None</option><option value="en">English</option><option value="ur">Urdu</option><option value="ar">Arabic</option></select></label><label>Filename<input type="text" value={exportOptions.filename} onChange={e=>setExportOptions(o=>({...o,filename:e.target.value}))} placeholder="quran-video.webm" /></label><div className="export-actions"><button className="primary" type="button" disabled={exporting} onClick={startExport}>{exporting?'Exporting…':'Export Video'}</button>{exporting&&<button className="ghost" type="button" onClick={()=>runtimeRef.current.cancelExport()}>Cancel</button>}</div>{exporting&&<progress max={100} value={exportProgress}/>} {exportUrl&&<a className="download-link" href={exportUrl} download={exportOptions.filename}>Download exported video</a>}</section>'''
-          text = text.replace(anchor, controls + anchor, 1)
+          if '</main>' not in text:
+              raise SystemExit('main closing anchor not found')
+          text = text.replace('</main>', controls + '</main>', 1)
 
           path.write_text(text)
           PY
