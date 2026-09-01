@@ -5,31 +5,34 @@ export type QuranApiCredentials = {
   clientId: string
 }
 
-export type ChapterReciter = {
+export type Reciter = {
   id: number
-  name: string
-  style?: { name?: string; language_name?: string }
-  qirat?: { name?: string; language_name?: string }
-  translated_name?: { name?: string; language_name?: string }
+  reciter_id?: number
+  reciter_name: string
+  style?: string
+  translated_name?: { name?: string }
+}
+
+export type ChapterRecitation = {
+  id: number
+  reciter_id: number
+  reciter_name?: string
+  style?: string
+  chapter_number?: number
 }
 
 export type AudioSegment = [wordIndex: number, startMs: number, endMs: number]
 
 export type VerseTiming = {
   verseKey: string
-  timestampFrom: number
-  timestampTo: number
-  duration?: number
+  startMs: number
+  endMs: number
   segments: AudioSegment[]
 }
 
 export type ChapterAudio = {
-  id: number
-  chapterId: number
-  fileSize: number
-  format: string
   audioUrl: string
-  timestamps?: VerseTiming[]
+  timestamps: VerseTiming[]
 }
 
 async function request<T>(path: string, credentials: QuranApiCredentials): Promise<T> {
@@ -45,12 +48,18 @@ async function request<T>(path: string, credentials: QuranApiCredentials): Promi
     },
   })
 
-  if (!response.ok) throw new Error(`Quran Foundation request failed (${response.status}).`)
+  if (!response.ok) {
+    throw new Error(`Quran Foundation request failed (${response.status}).`)
+  }
+
   return response.json() as Promise<T>
 }
 
-export async function fetchChapterReciters(credentials: QuranApiCredentials, language = 'en') {
-  return request<{ reciters: ChapterReciter[] }>(`/resources/chapter_reciters?language=${encodeURIComponent(language)}`, credentials)
+export async function fetchChapterRecitations(credentials: QuranApiCredentials) {
+  return request<{ recitations: ChapterRecitation[] }>(
+    '/resources/chapter_reciters',
+    credentials,
+  )
 }
 
 export async function fetchChapterAudio(
@@ -59,12 +68,18 @@ export async function fetchChapterAudio(
   credentials: QuranApiCredentials,
   includeSegments = true,
 ): Promise<ChapterAudio> {
-  const data = await request<{ audio_file: {
-    id: number
-    chapter_id: number
-    file_size: number
-    format: string
-    audio_url: string
+  const data = await request<{
+    audio_file?: {
+      audio_url?: string
+      timestamps?: Array<{
+        verse_key: string
+        timestamp_from: number
+        timestamp_to: number
+        duration?: number
+        segments?: AudioSegment[]
+      }>
+    }
+    audio_url?: string
     timestamps?: Array<{
       verse_key: string
       timestamp_from: number
@@ -72,42 +87,36 @@ export async function fetchChapterAudio(
       duration?: number
       segments?: AudioSegment[]
     }>
-  } }>(`/chapter_recitations/${reciterId}/${chapterNumber}?segments=${includeSegments}`, credentials)
+  }>(
+    `/chapter_reciters/${reciterId}/audio_files/${chapterNumber}?segments=${includeSegments}`,
+    credentials,
+  )
+
+  const source = data.audio_file ?? data
+  const timestamps = source.timestamps ?? []
 
   return {
-    id: data.audio_file.id,
-    chapterId: data.audio_file.chapter_id,
-    fileSize: data.audio_file.file_size,
-    format: data.audio_file.format,
-    audioUrl: data.audio_file.audio_url,
-    timestamps: data.audio_file.timestamps?.map(t => ({
+    audioUrl: source.audio_url ?? '',
+    timestamps: timestamps.map(t => ({
       verseKey: t.verse_key,
-      timestampFrom: t.timestamp_from,
-      timestampTo: t.timestamp_to,
-      duration: t.duration,
+      startMs: t.timestamp_from,
+      endMs: t.timestamp_to,
       segments: t.segments ?? [],
     })),
   }
 }
 
-export async function fetchTimestampRange(
-  reciterId: number,
-  chapterNumber: number,
-  credentials: QuranApiCredentials,
-) {
-  return request<{ result: { timestamp_from: number; timestamp_to: number } }>(
-    `/audio/reciters/${reciterId}/timestamp?chapter_number=${chapterNumber}`,
-    credentials,
-  )
-}
-
 export function findActiveTiming(timings: VerseTiming[], timeMs: number) {
-  const verse = timings.find(t => timeMs >= t.timestampFrom && timeMs < t.timestampTo)
+  const verse = timings.find(t => timeMs >= t.startMs && timeMs < t.endMs)
   if (!verse) return null
-  const segmentIndex = verse.segments.findIndex(([, start, end]) => timeMs >= start && timeMs < end)
+
+  const segmentIndex = verse.segments.findIndex(
+    ([, start, end]) => timeMs >= start && timeMs < end,
+  )
+
   return {
     verseKey: verse.verseKey,
-    wordIndex: segmentIndex < 0 ? null : verse.segments[segmentIndex][0],
     segmentIndex,
+    wordIndex: segmentIndex < 0 ? null : verse.segments[segmentIndex][0],
   }
 }
