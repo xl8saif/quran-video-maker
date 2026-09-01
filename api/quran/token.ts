@@ -10,6 +10,15 @@ type TokenResponse = {
   expires_in?: unknown
 }
 
+type CachedToken = {
+  access_token: string
+  expires_in: number
+  expiresAt: number
+}
+
+let cachedToken: CachedToken | null = null
+let tokenRequest: Promise<CachedToken> | null = null
+
 function getConfig() {
   const clientId = process.env.QF_CLIENT_ID
   const clientSecret = process.env.QF_CLIENT_SECRET
@@ -30,6 +39,58 @@ function getConfig() {
   }
 }
 
+async function requestToken(): Promise<CachedToken> {
+  const { clientId, clientSecret, env } = getConfig()
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+  const response = await fetch(`${AUTH_BASE_BY_ENV[env]}/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      scope: 'content',
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Quran Foundation token request failed with status ${response.status}`)
+  }
+
+  const token = (await response.json()) as TokenResponse
+  if (typeof token.access_token !== 'string' || typeof token.expires_in !== 'number') {
+    throw new Error('Invalid token response from Quran Foundation')
+  }
+
+  return {
+    access_token: token.access_token,
+    expires_in: token.expires_in,
+    expiresAt: Date.now() + token.expires_in * 1000,
+  }
+}
+
+async function getToken(): Promise<CachedToken> {
+  const refreshWindowMs = 30_000
+
+  if (cachedToken && Date.now() < cachedToken.expiresAt - refreshWindowMs) {
+    return cachedToken
+  }
+
+  if (!tokenRequest) {
+    tokenRequest = requestToken()
+      .then((token) => {
+        cachedToken = token
+        return token
+      })
+      .finally(() => {
+        tokenRequest = null
+      })
+  }
+
+  return tokenRequest
+}
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -39,34 +100,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { clientId, clientSecret, env } = getConfig()
-    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
-    const response = await fetch(`${AUTH_BASE_BY_ENV[env]}/oauth2/token`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${basicAuth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        scope: 'content',
-      }),
-    })
-
-    if (!response.ok) {
-      return new Response(JSON.stringify({ error: 'Quran Foundation token request failed' }), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    const token = (await response.json()) as TokenResponse
-    if (typeof token.access_token !== 'string' || typeof token.expires_in !== 'number') {
-      return new Response(JSON.stringify({ error: 'Invalid token response from Quran Foundation' }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    const token = await getToken()
 
     return new Response(
       JSON.stringify({
@@ -82,7 +116,11 @@ export default async function handler(req: Request): Promise<Response> {
       },
     )
   } catch (error) {
-    console.error('Quran Foundation token retrieval failed:', error instanceof Error ? error.message : 'unknown error')
+    console.error(
+      'Quran Foundation token retrieval failed:',
+      error instanceof Error ? error.message : 'unknown error',
+    )
+
     return new Response(JSON.stringify({ error: 'Unable to retrieve Quran Foundation token' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
