@@ -1,0 +1,29 @@
+import { test, expect } from '@playwright/test'
+
+test('production app loads and exposes core Quran controls', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByText('Quran Video Maker')).toBeVisible()
+  await expect(page.getByText('Quran', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Surah')).toBeVisible()
+  await expect(page.getByLabel('Mushaf style')).toBeVisible()
+  await expect(page.getByLabel('Translation')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Export video' })).toBeVisible()
+})
+
+test('Surah and translation controls remain interactive', async ({ page }) => {
+  await page.goto('/')
+  const surah = page.getByLabel('Surah')
+  await surah.selectOption('2')
+  await expect(surah).toHaveValue('2')
+
+  const translation = page.getByLabel('Display')
+  await translation.selectOption('ur')
+  await expect(translation).toHaveValue('ur')
+})
+
+test('export is initially available and does not start without user action', async ({ page }) => {
+  await page.goto('/')
+  const exportButton = page.getByRole('button', { name: 'Export video' })
+  await expect(exportButton).toBeEnabled()
+  await expect(page.getByText(/Exporting/)).toHaveCount(0)
+})
