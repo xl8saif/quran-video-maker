@@ -5,6 +5,7 @@ const ALLOWED_PREFIXES = [
   'verses/by_page/',
   'verses/by_chapter/',
   'verses/by_key/',
+  'resources/translations',
   'resources/chapter_reciters',
   'chapter_reciters/',
 ] as const
