@@ -13,6 +13,13 @@ export type ApiWord = {
   audio_url?: string
 }
 
+export type ApiTranslation = {
+  resource_id?: number
+  text: string
+  language_name?: string
+  resource_name?: string
+}
+
 export type ApiVerse = {
   verse_key: string
   verse_number: number
@@ -20,7 +27,7 @@ export type ApiVerse = {
   text_uthmani?: string
   text_indopak?: string
   words?: ApiWord[]
-  translations?: { text: string; language_name?: string; resource_name?: string }[]
+  translations?: ApiTranslation[]
 }
 
 export type MushafPageBoundary = {
@@ -81,10 +88,18 @@ export async function fetchPage(
   pageNumber: number,
   style: 'hafs-arabic-naskh' | 'indo-pak-muhammadi',
   config?: MushafApiConfig,
+  translationIds: number[] = [],
 ): Promise<{ verses: ApiVerse[] }> {
   const mushaf = getMushafId(style)
+  const params = new URLSearchParams({
+    mushaf: String(mushaf),
+    words: 'true',
+    word_fields: 'text_uthmani,text_indopak,text_qpc_hafs,line_number,page_number,verse_key,position',
+  })
+  const ids = [...new Set(translationIds)].filter(id => Number.isInteger(id) && id > 0)
+  if (ids.length) params.set('translations', ids.join(','))
   const data = await request(
-    `/verses/by_page/${encodeURIComponent(pageNumber)}?mushaf=${mushaf}&words=true&word_fields=text_uthmani,text_indopak,text_qpc_hafs,line_number,page_number,verse_key,position`,
+    `/verses/by_page/${encodeURIComponent(pageNumber)}?${params.toString()}`,
     config,
   ) as { verses?: unknown }
 
