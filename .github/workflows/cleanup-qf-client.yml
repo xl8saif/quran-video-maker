@@ -1,8 +1,6 @@
 name: cleanup qf browser credentials
 on:
   push:
-    paths:
-      - '.github/workflows/cleanup-qf-client.yml'
 
 jobs:
   cleanup:
@@ -45,6 +43,6 @@ jobs:
       - name: Remove temporary workflow
         if: success()
         run: |
-          git rm .github/workflows/cleanup-qf-client.yml
+          git rm .github/workflows/cleanup-qf-client.yml cleanup-trigger.txt
           git commit -m 'chore: remove temporary credential cleanup workflow'
           git push
