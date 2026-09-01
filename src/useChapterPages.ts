@@ -19,9 +19,10 @@ export function useChapterPages(chapterNumber: number, style: MushafStyleId) {
 
   React.useEffect(() => {
     let cancelled = false
+    setLookup(null)
 
     if (!SUPPORTED_STYLES.has(style)) {
-      setLookup(null)
+      setLoading(false)
       setError('This Mushaf style does not have a page-layout mapping yet.')
       return () => { cancelled = true }
     }
