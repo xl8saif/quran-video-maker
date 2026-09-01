@@ -11,9 +11,7 @@ type ExportLogo = { url?: string; opacity?: number; size?: number; x?: number; y
 type ExportTranslation = { language: string; text: string }
 type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; chapterNumber?: number; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null>; exportBackground?: ExportMedia; exportLogo?: ExportLogo; exportTranslations?: ExportTranslation[]; translationLanguages?: TranslationLanguage[] }
 
-function languageLabel(language: TranslationLanguage) {
-  return language === 'en' ? 'English' : language === 'ur' ? 'Urdu' : 'Arabic'
-}
+function languageLabel(language: TranslationLanguage) { return language === 'en' ? 'English' : language === 'ur' ? 'Urdu' : 'Arabic' }
 
 export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', chapterNumber, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [], translationLanguages = [] }: Props) {
   const [verses, setVerses] = React.useState<ApiVerse[]>([])
@@ -38,10 +36,7 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
     return () => { cancelled = true }
   }, [styleId, page, accessToken, clientId, translationIds, onStatus])
 
-  React.useEffect(() => {
-    setLiveActiveVerse('')
-    setLiveActiveWordIndex(0)
-  }, [resolvedChapterNumber])
+  React.useEffect(() => { setLiveActiveVerse(''); setLiveActiveWordIndex(0) }, [resolvedChapterNumber])
 
   const lines = React.useMemo(() => {
     const map = new Map<number, { verseKey: string; position: number; text: string }[]>()
@@ -50,6 +45,11 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
   }, [verses, styleId])
 
   const activeWord = React.useMemo(() => effectiveActiveVerse ? (verses.find(v => v.verse_key === effectiveActiveVerse)?.words || [])[effectiveActiveWordIndex] || null : null, [verses, effectiveActiveVerse, effectiveActiveWordIndex])
+
+  React.useEffect(() => {
+    if (!autoScroll || !activeWordRef.current || !pageRef.current || !effectiveActiveVerse) return
+    activeWordRef.current.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+  }, [autoScroll, effectiveActiveVerse, effectiveActiveWordIndex, activeWord])
 
   const drawMushaf = React.useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.fillStyle = '#17120c'; ctx.textAlign = 'right'; ctx.direction = 'rtl'
@@ -61,24 +61,14 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
     const canvas = exportCanvasRef?.current
     if (!canvas || !lines.length) return
     let cancelled = false
-    compositorRef.current?.destroy()
-    compositorRef.current = null
-    void createExportCompositor({ canvas, width: canvas.width || 1280, height: canvas.height || 720, background: exportBackground, logo: exportLogo, translations: exportTranslations, drawMushaf }).then(compositor => {
-      if (cancelled) compositor.destroy()
-      else compositorRef.current = compositor
-    }).catch(errorValue => { if (!cancelled) onStatus?.(errorValue instanceof Error ? errorValue.message : 'Export compositor failed') })
+    compositorRef.current?.destroy(); compositorRef.current = null
+    void createExportCompositor({ canvas, width: canvas.width || 1280, height: canvas.height || 720, background: exportBackground, logo: exportLogo, translations: exportTranslations, drawMushaf }).then(compositor => { if (cancelled) compositor.destroy(); else compositorRef.current = compositor }).catch(errorValue => { if (!cancelled) onStatus?.(errorValue instanceof Error ? errorValue.message : 'Export compositor failed') })
     return () => { cancelled = true; compositorRef.current?.destroy(); compositorRef.current = null }
   }, [exportCanvasRef, exportBackground, exportLogo, exportTranslations, drawMushaf, lines.length, onStatus])
 
   React.useLayoutEffect(() => { const word = activeWordRef.current, pageEl = pageRef.current; if (!showFinger || !word || !pageEl) { setFingerStyle({ opacity: 0 }); return }; const update = () => { const wr = word.getBoundingClientRect(), pr = pageEl.getBoundingClientRect(); setFingerStyle({ opacity: 1, left: `${wr.left - pr.left + wr.width / 2}px`, top: `${wr.bottom - pr.top + 6}px`, transitionDuration: `${Math.max(100, 500 - scrollSpeed * 4)}ms` }) }; update(); window.addEventListener('resize', update); pageEl.addEventListener('scroll', update, { passive: true }); return () => { window.removeEventListener('resize', update); pageEl.removeEventListener('scroll', update) } }, [effectiveActiveVerse, effectiveActiveWordIndex, showFinger, scrollSpeed, lines, activeWord])
 
-  const translationRows = React.useMemo(() => verses.map(verse => ({
-    verse,
-    translations: (verse.translations || []).map(item => {
-      const language = translationLanguages.find(candidate => getId(candidate) === item.resource_id)
-      return language ? { ...item, language } : null
-    }).filter((item): item is NonNullable<typeof item> => Boolean(item)),
-  })).filter(row => row.translations.length), [verses, translationLanguages, getId])
+  const translationRows = React.useMemo(() => verses.map(verse => ({ verse, translations: (verse.translations || []).map(item => { const language = translationLanguages.find(candidate => getId(candidate) === item.resource_id); return language ? { ...item, language } : null }).filter((item): item is NonNullable<typeof item> => Boolean(item)) })).filter(row => row.translations.length), [verses, translationLanguages, getId])
 
   if (loading || translationsLoading && translationLanguages.length > 0 && !verses.length) return <div className="live-mushaf-state">Loading verified Mushaf page {page}…</div>
   if (error) return <div className="live-mushaf-state error"><strong>Live Mushaf not loaded</strong><span>{error}</span><small>The app could not retrieve this Mushaf page through its secure backend connection.</small></div>
