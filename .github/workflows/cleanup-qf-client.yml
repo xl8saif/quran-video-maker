@@ -21,13 +21,14 @@ jobs:
           text = text.replace("import { createRecitationController, type RecitationState } from './recitationController'\n", "")
           text = text.replace("import type { ExportPanelOptions } from './exportPanel'\n", "import type { ExportPanelOptions } from './exportPanel'\nimport type { ChapterAudioTiming } from './recitationTiming'\n")
           text = text.replace(",[token,setToken]=React.useState(()=>localStorage.getItem('qvm_qf_token')||''),[clientId,setClientId]=React.useState(()=>localStorage.getItem('qvm_qf_client')||''),[settingsOpen,setSettingsOpen]=React.useState(false)", "")
-          text = text.replace(",[recitationRef=React.useRef<ReturnType<typeof createRecitationController>|null>(null)", "")
+          text = re.sub(r",recitationRef=React\.useRef<ReturnType<typeof createRecitationController>\|null>\(null\)", "", text, count=1)
           text = text.replace("[recitation,setRecitation]=React.useState<RecitationState>({loading:false,error:'',audio:null,activeWordIndex:0})", "[recitation,setRecitation]=React.useState<{loading:boolean;error:string;audio:ChapterAudioTiming|null;activeWordIndex:number;activeVerse?:string}>({loading:false,error:'',audio:null,activeWordIndex:0})")
           text = re.sub(r" React\.useEffect\(\(\)=>\{if\(!token\|\|!clientId\)return;const controller=createRecitationController.*?\n React\.useEffect\(\(\)=>\{const controller=recitationRef\.current.*?\},\[surahNumber,token,clientId\]\)\n", "", text, count=1, flags=re.S)
           text = re.sub(r" React\.useEffect\(\(\)=>\{if\(!recitation\.audio\)return;recitationRef\.current\?\.updateTime\(time\*1000\)\},\[time,recitation\.audio\]\)\n", "", text, count=1)
           text = re.sub(r" const saveApiSettings=\(\)=>\{.*?\}\n", "", text, count=1)
           text = text.replace("<button className=\"ghost\" onClick={()=>setSettingsOpen(v=>!v)}><Settings2 size={16}/> Settings</button>", "")
-          text = re.sub(r'\n \{settingsOpen&&<div className=\"settings-pop\">.*?</div>\}', '', text, count=1, flags=re.S)
+          text = re.sub(r'\n \{settingsOpen&&<div className="settings-pop">.*?</div>\}', '', text, count=1, flags=re.S)
+          text = text.replace(" accessToken={token} clientId={clientId}", "")
           path.write_text(text)
           PY
           if grep -nE 'qvm_qf_|createRecitationController|settingsOpen|saveApiSettings|\btoken\b|\bclientId\b|recitationRef' src/main.tsx; then
