@@ -4,7 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#111827" />
+    <meta name="google" content="notranslate" />
     <title>Quran Video Maker</title>
+    <script>
+      // Content API credentials are backend-only. Remove credentials saved by older builds
+      // and prevent the legacy browser credential UI from persisting them.
+      (() => {
+        try {
+          const blocked = new Set(['qvm_qf_token', 'qvm_qf_client'])
+          localStorage.removeItem('qvm_qf_token')
+          localStorage.removeItem('qvm_qf_client')
+          const originalGetItem = Storage.prototype.getItem
+          const originalSetItem = Storage.prototype.setItem
+          Storage.prototype.getItem = function (key) {
+            return blocked.has(key) ? null : originalGetItem.call(this, key)
+          }
+          Storage.prototype.setItem = function (key, value) {
+            if (blocked.has(key)) return
+            return originalSetItem.call(this, key, value)
+          }
+        } catch {
+          // Storage may be unavailable; the backend remains the source of API credentials.
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
