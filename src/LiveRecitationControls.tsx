@@ -26,21 +26,16 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
   const [error, setError] = React.useState('')
 
   React.useEffect(() => { statusRef.current = onStatus }, [onStatus])
-
   React.useEffect(() => {
     let cancelled = false
-    setLoadingReciters(true)
-    setError('')
+    setLoadingReciters(true); setError('')
     void fetchChapterRecitations().then(result => {
       if (cancelled) return
       setReciters(result.recitations)
       if (result.recitations.length && !result.recitations.some(item => item.id === reciterId)) setReciterId(result.recitations[0].id)
-    }).catch(errorValue => {
-      if (!cancelled) setError(errorValue instanceof Error ? errorValue.message : 'Unable to load reciters.')
-    }).finally(() => { if (!cancelled) setLoadingReciters(false) })
+    }).catch(errorValue => { if (!cancelled) setError(errorValue instanceof Error ? errorValue.message : 'Unable to load reciters.') }).finally(() => { if (!cancelled) setLoadingReciters(false) })
     return () => { cancelled = true }
   }, [])
-
   React.useEffect(() => {
     if (!reciterId) return
     let cancelled = false
@@ -50,21 +45,12 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
       setAudio(result)
       if (audioRef.current) { audioRef.current.src = result.audioUrl; audioRef.current.playbackRate = speed; audioRef.current.load() }
       statusRef.current?.('Quran Foundation recitation loaded')
-    }).catch(errorValue => {
-      if (!cancelled) { setAudio(null); setError(errorValue instanceof Error ? errorValue.message : 'Unable to load recitation.'); statusRef.current?.('Quran Foundation recitation unavailable') }
-    }).finally(() => { if (!cancelled) setLoadingAudio(false) })
+    }).catch(errorValue => { if (!cancelled) { setAudio(null); setError(errorValue instanceof Error ? errorValue.message : 'Unable to load recitation.'); statusRef.current?.('Quran Foundation recitation unavailable') } }).finally(() => { if (!cancelled) setLoadingAudio(false) })
     return () => { cancelled = true }
   }, [chapterNumber, reciterId])
-
   React.useEffect(() => { if (audioRef.current) audioRef.current.playbackRate = speed }, [speed])
 
-  const handleTime = (timeMs: number) => {
-    setCurrentMs(timeMs)
-    if (!audio) return
-    const active = findActiveTiming(audio.timestamps, timeMs)
-    onSync?.(active.verseKey, active.wordIndex, timeMs)
-  }
-
+  const handleTime = (timeMs: number) => { setCurrentMs(timeMs); if (!audio) return; const active = findActiveTiming(audio.timestamps, timeMs); onSync?.(active.verseKey, active.wordIndex, timeMs) }
   const durationMs = Math.max(audio?.timestamps.length ? timingDuration(audio.timestamps) : 0, audioRef.current?.duration ? audioRef.current.duration * 1000 : 0)
   const progress = durationMs > 0 ? Math.min(100, currentMs / durationMs * 100) : 0
   const togglePlayback = () => { const element = audioRef.current; if (!element || !audio) return; if (element.paused) void element.play(); else element.pause() }
@@ -80,8 +66,8 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
       <select value={speed} onChange={event => setSpeed(Number(event.target.value))} aria-label="Playback speed">{SPEEDS.map(value => <option key={value} value={value}>{value}×</option>)}</select>
     </div>
     <input aria-label="Recitation progress" type="range" min="0" max="100" step="0.1" value={progress} disabled={!audio} onChange={event => seek(Number(event.target.value))}/>
-    <audio ref={audioRef} preload="metadata" onTimeUpdate={event => handleTime(event.currentTarget.currentTime * 1000)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); handleTime(durationMs) }} />
-    <small className="hint">{error || (loadingAudio ? 'Loading Surah recitation…' : audio ? `${formatTime(currentMs)} / ${formatTime(durationMs)}` : 'Select a reciter')}</small>
+    <audio id="qvm-export-audio" ref={audioRef} preload="metadata" onTimeUpdate={event => handleTime(event.currentTarget.currentTime * 1000)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); handleTime(durationMs) }} />
+    <small className="hint">{error || (loadingAudio ? 'Loading Surah recitation…' : audio ? `${formatTime(currentMs)} / ${formatTime(durationMs)} · ${speed}×` : 'Select a reciter')}</small>
   </div>
 }
 
