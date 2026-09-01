@@ -2,13 +2,19 @@ import React from 'react'
 import type { MushafStyleId } from './mushafStyles'
 import { fetchPage, type ApiVerse } from './mushafApi'
 import { createExportCompositor } from './exportCompositor'
+import { useTranslationResources } from './useTranslationResources'
+import type { TranslationLanguage } from './translationUiModel'
 
 type ExportMedia = { url?: string; kind?: 'image' | 'video' | 'upload'; opacity?: number; fit?: 'cover' | 'contain' | 'fill'; x?: number; y?: number }
 type ExportLogo = { url?: string; opacity?: number; size?: number; x?: number; y?: number }
 type ExportTranslation = { language: string; text: string }
-type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null>; exportBackground?: ExportMedia; exportLogo?: ExportLogo; exportTranslations?: ExportTranslation[] }
+type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null>; exportBackground?: ExportMedia; exportLogo?: ExportLogo; exportTranslations?: ExportTranslation[]; translationLanguages?: TranslationLanguage[] }
 
-export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [] }: Props) {
+function languageLabel(language: TranslationLanguage) {
+  return language === 'en' ? 'English' : language === 'ur' ? 'Urdu' : 'Arabic'
+}
+
+export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [], translationLanguages = [] }: Props) {
   const [verses, setVerses] = React.useState<ApiVerse[]>([])
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -16,13 +22,15 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
   const activeWordRef = React.useRef<HTMLSpanElement>(null)
   const [fingerStyle, setFingerStyle] = React.useState<React.CSSProperties>({ opacity: 0 })
   const compositorRef = React.useRef<{ draw: () => void; destroy: () => void } | null>(null)
+  const { getId, loading: translationsLoading } = useTranslationResources()
+  const translationIds = React.useMemo(() => translationLanguages.map(getId).filter((id): id is number => typeof id === 'number'), [translationLanguages, getId])
 
   React.useEffect(() => {
     let cancelled = false
     setLoading(true); setError('')
-    fetchPage(page, styleId, { accessToken, clientId }).then(data => { if (!cancelled) { setVerses(data.verses || []); onStatus?.(`Live Mushaf page ${page} loaded`) } }).catch(e => { if (!cancelled) { setVerses([]); setError(e instanceof Error ? e.message : 'Unable to load Mushaf page'); onStatus?.('Live Mushaf unavailable') } }).finally(() => { if (!cancelled) setLoading(false) })
+    fetchPage(page, styleId, { accessToken, clientId }, translationIds).then(data => { if (!cancelled) { setVerses(data.verses || []); onStatus?.(`Live Mushaf page ${page} loaded`) } }).catch(e => { if (!cancelled) { setVerses([]); setError(e instanceof Error ? e.message : 'Unable to load Mushaf page'); onStatus?.('Live Mushaf unavailable') } }).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [styleId, page, accessToken, clientId, onStatus])
+  }, [styleId, page, accessToken, clientId, translationIds, onStatus])
 
   const lines = React.useMemo(() => {
     const map = new Map<number, { verseKey: string; position: number; text: string }[]>()
@@ -53,8 +61,16 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
 
   React.useLayoutEffect(() => { const word = activeWordRef.current, pageEl = pageRef.current; if (!showFinger || !word || !pageEl) { setFingerStyle({ opacity: 0 }); return }; const update = () => { const wr = word.getBoundingClientRect(), pr = pageEl.getBoundingClientRect(); setFingerStyle({ opacity: 1, left: `${wr.left - pr.left + wr.width / 2}px`, top: `${wr.bottom - pr.top + 6}px`, transitionDuration: `${Math.max(100, 500 - scrollSpeed * 4)}ms` }) }; update(); window.addEventListener('resize', update); pageEl.addEventListener('scroll', update, { passive: true }); return () => { window.removeEventListener('resize', update); pageEl.removeEventListener('scroll', update) } }, [activeVerse, activeWordIndex, showFinger, scrollSpeed, lines, activeWord])
 
-  if (loading) return <div className="live-mushaf-state">Loading verified Mushaf page {page}…</div>
+  const translationRows = React.useMemo(() => verses.map(verse => ({
+    verse,
+    translations: (verse.translations || []).map(item => {
+      const language = translationLanguages.find(candidate => getId(candidate) === item.resource_id)
+      return language ? { ...item, language } : null
+    }).filter((item): item is NonNullable<typeof item> => Boolean(item)),
+  })).filter(row => row.translations.length), [verses, translationLanguages, getId])
+
+  if (loading || translationsLoading && translationLanguages.length > 0 && !verses.length) return <div className="live-mushaf-state">Loading verified Mushaf page {page}…</div>
   if (error) return <div className="live-mushaf-state error"><strong>Live Mushaf not loaded</strong><span>{error}</span><small>The app could not retrieve this Mushaf page through its secure backend connection.</small></div>
   if (!lines.length) return <div className="live-mushaf-state">No page data returned.</div>
-  return <div className="quran-live-page" dir="rtl" ref={pageRef}><div className="live-page-number">{page}</div>{showFinger && <div className="live-finger" aria-hidden="true" style={fingerStyle}>☝</div>}{lines.map(([lineNumber, words]) => { const active = activeVerse ? words.some(w => w.verseKey === activeVerse) : false; return <div key={lineNumber} className={`live-quran-line ${active ? 'active-line' : ''}`} style={active ? ({ '--highlight': highlight } as React.CSSProperties) : undefined}>{words.map(w => { const isActiveWord = Boolean(activeVerse && w.verseKey === activeVerse && activeWord && w.position === activeWord.position); return <span ref={isActiveWord ? activeWordRef : null} key={`${w.verseKey}-${w.position}`} className={isActiveWord ? 'active-live-word' : w.verseKey === activeVerse ? 'active-live-word-soft' : ''}>{w.text} </span> })}</div> })}{exportCanvasRef && <canvas ref={exportCanvasRef} width={1280} height={720} aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />}</div>
+  return <div className="quran-live-page" dir="rtl" translate="no" ref={pageRef}><div className="live-page-number">{page}</div>{showFinger && <div className="live-finger" aria-hidden="true" style={fingerStyle}>☝</div>}{lines.map(([lineNumber, words]) => { const active = activeVerse ? words.some(w => w.verseKey === activeVerse) : false; return <div key={lineNumber} className={`live-quran-line ${active ? 'active-line' : ''}`} style={active ? ({ '--highlight': highlight } as React.CSSProperties) : undefined}>{words.map(w => { const isActiveWord = Boolean(activeVerse && w.verseKey === activeVerse && activeWord && w.position === activeWord.position); return <span ref={isActiveWord ? activeWordRef : null} key={`${w.verseKey}-${w.position}`} className={isActiveWord ? 'active-live-word' : w.verseKey === activeVerse ? 'active-live-word-soft' : ''}>{w.text} </span> })}</div> })}<div className="live-translations" translate="no">{translationRows.map(({verse, translations}) => <div key={verse.verse_key} className="live-translation-verse"><span className="live-translation-key">{verse.verse_key}</span>{translations.map(item => <div key={`${item.resource_id}-${item.language}`} className={`live-translation live-translation-${item.language}`} dir={item.language === 'en' ? 'ltr' : 'rtl'}><span className="live-translation-label">{languageLabel(item.language)}</span><span dangerouslySetInnerHTML={{ __html: item.text }} /></div>)}</div>)}</div>{exportCanvasRef && <canvas ref={exportCanvasRef} width={1280} height={720} aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />}</div>
 }
