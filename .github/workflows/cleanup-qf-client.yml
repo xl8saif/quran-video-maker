@@ -1,6 +1,8 @@
 name: cleanup qf browser credentials
 on:
-  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/cleanup-qf-client.yml'
 
 jobs:
   cleanup:
@@ -13,6 +15,7 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           path = Path('src/main.tsx')
           text = path.read_text()
           text = text.replace("import { createRecitationController, type RecitationState } from './recitationController'\n", "")
@@ -24,7 +27,6 @@ jobs:
           text = text.replace(" React.useEffect(()=>{if(!recitation.audio)return;recitationRef.current?.updateTime(time*1000)},[time,recitation.audio])\n", "")
           text = text.replace(" const saveApiSettings=()=>{localStorage.setItem('qvm_qf_token',token);localStorage.setItem('qvm_qf_client',clientId);setSettingsOpen(false);setStatus(token&&clientId?'API credentials saved locally':'Development data')}\n", "")
           text = text.replace("<button className=\"ghost\" onClick={()=>setSettingsOpen(v=>!v)}><Settings2 size={16}/> Settings</button>", "")
-          import re
           text = re.sub(r'\n \{settingsOpen&&<div className=\"settings-pop\">.*?</div>\}', '', text, count=1)
           path.write_text(text)
           PY
