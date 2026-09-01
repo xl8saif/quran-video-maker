@@ -1,0 +1,48 @@
+name: cleanup qf browser credentials
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Remove legacy browser credential flow
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/main.tsx')
+          text = path.read_text()
+          text = text.replace("import { createRecitationController, type RecitationState } from './recitationController'\n", "")
+          text = text.replace(",[token,setToken]=React.useState(()=>localStorage.getItem('qvm_qf_token')||''),[clientId,setClientId]=React.useState(()=>localStorage.getItem('qvm_qf_client')||''),[settingsOpen,setSettingsOpen]=React.useState(false)", "")
+          text = text.replace(",[recitation,setRecitation]=React.useState<RecitationState>({loading:false,error:'',audio:null,activeWordIndex:0})", "")
+          text = text.replace(",recitationRef=React.useRef<ReturnType<typeof createRecitationController>|null>(null)", "")
+          old = " React.useEffect(()=>{if(!token||!clientId)return;const controller=createRecitationController({accessToken:token,clientId});recitationRef.current=controller;const unsubscribe=controller.subscribe(setRecitation);return()=>{unsubscribe();controller.destroy();recitationRef.current=null}},[token,clientId])\n React.useEffect(()=>{const controller=recitationRef.current;if(!controller||!token||!clientId)return;void controller.loadChapter(1,surahNumber).then(state=>{if(state.error)setStatus(state.error);else if(state.audio)setStatus('Quran Foundation recitation loaded')})},[surahNumber,token,clientId])\n"
+          text = text.replace(old, "")
+          text = text.replace(" React.useEffect(()=>{if(!recitation.audio)return;recitationRef.current?.updateTime(time*1000)},[time,recitation.audio])\n", "")
+          text = text.replace(" const saveApiSettings=()=>{localStorage.setItem('qvm_qf_token',token);localStorage.setItem('qvm_qf_client',clientId);setSettingsOpen(false);setStatus(token&&clientId?'API credentials saved locally':'Development data')}\n", "")
+          text = text.replace("<button className=\"ghost\" onClick={()=>setSettingsOpen(v=>!v)}><Settings2 size={16}/> Settings</button>", "")
+          import re
+          text = re.sub(r'\n \{settingsOpen&&<div className=\"settings-pop\">.*?</div>\}', '', text, count=1)
+          path.write_text(text)
+          PY
+      - name: Verify build
+        run: |
+          npm install
+          npx tsc --noEmit
+          npm run build
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.tsx
+          git diff --cached --quiet || git commit -m 'security: remove legacy browser Quran credentials'
+          git push
+      - name: Remove temporary workflow
+        if: success()
+        run: |
+          git rm .github/workflows/cleanup-qf-client.yml
+          git commit -m 'chore: remove temporary credential cleanup workflow'
+          git push
