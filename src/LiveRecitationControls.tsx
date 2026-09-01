@@ -66,7 +66,7 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
       <select value={speed} onChange={event => setSpeed(Number(event.target.value))} aria-label="Playback speed">{SPEEDS.map(value => <option key={value} value={value}>{value}×</option>)}</select>
     </div>
     <input aria-label="Recitation progress" type="range" min="0" max="100" step="0.1" value={progress} disabled={!audio} onChange={event => seek(Number(event.target.value))}/>
-    <audio id="qvm-export-audio" ref={audioRef} preload="metadata" onTimeUpdate={event => handleTime(event.currentTarget.currentTime * 1000)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); handleTime(durationMs) }} />
+    <audio id="qvm-export-audio" ref={audioRef} crossOrigin="anonymous" preload="metadata" onTimeUpdate={event => handleTime(event.currentTarget.currentTime * 1000)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); handleTime(durationMs) }} />
     <small className="hint">{error || (loadingAudio ? 'Loading Surah recitation…' : audio ? `${formatTime(currentMs)} / ${formatTime(durationMs)} · ${speed}×` : 'Select a reciter')}</small>
   </div>
 }
