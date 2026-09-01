@@ -43,12 +43,12 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
     void fetchChapterAudio(reciterId, chapterNumber, undefined, true).then(result => {
       if (cancelled) return
       setAudio(result)
-      if (audioRef.current) { audioRef.current.src = result.audioUrl; audioRef.current.playbackRate = speed; audioRef.current.load() }
+      if (audioRef.current) { audioRef.current.src = result.audioUrl; audioRef.current.playbackRate = speed; audioRef.current.dataset.qvmExportSpeed = String(speed); audioRef.current.load() }
       statusRef.current?.('Quran Foundation recitation loaded')
     }).catch(errorValue => { if (!cancelled) { setAudio(null); setError(errorValue instanceof Error ? errorValue.message : 'Unable to load recitation.'); statusRef.current?.('Quran Foundation recitation unavailable') } }).finally(() => { if (!cancelled) setLoadingAudio(false) })
     return () => { cancelled = true }
   }, [chapterNumber, reciterId])
-  React.useEffect(() => { if (audioRef.current) audioRef.current.playbackRate = speed }, [speed])
+  React.useEffect(() => { if (audioRef.current) { audioRef.current.playbackRate = speed; audioRef.current.dataset.qvmExportSpeed = String(speed) } }, [speed])
 
   const handleTime = (timeMs: number) => { setCurrentMs(timeMs); if (!audio) return; const active = findActiveTiming(audio.timestamps, timeMs); onSync?.(active.verseKey, active.wordIndex, timeMs) }
   const durationMs = Math.max(audio?.timestamps.length ? timingDuration(audio.timestamps) : 0, audioRef.current?.duration ? audioRef.current.duration * 1000 : 0)
