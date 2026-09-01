@@ -15,7 +15,7 @@ function languageLabel(language: TranslationLanguage) {
   return language === 'en' ? 'English' : language === 'ur' ? 'Urdu' : 'Arabic'
 }
 
-export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', chapterNumber = 1, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [], translationLanguages = [] }: Props) {
+export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', chapterNumber, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [], translationLanguages = [] }: Props) {
   const [verses, setVerses] = React.useState<ApiVerse[]>([])
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -29,6 +29,7 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
   const translationIds = React.useMemo(() => translationLanguages.map(getId).filter((id): id is number => typeof id === 'number'), [translationLanguages, getId])
   const effectiveActiveVerse = liveActiveVerse || activeVerse
   const effectiveActiveWordIndex = liveActiveVerse ? liveActiveWordIndex : activeWordIndex
+  const resolvedChapterNumber = chapterNumber || Number(verses[0]?.verse_key?.split(':')[0]) || 1
 
   React.useEffect(() => {
     let cancelled = false
@@ -40,7 +41,7 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
   React.useEffect(() => {
     setLiveActiveVerse('')
     setLiveActiveWordIndex(0)
-  }, [chapterNumber])
+  }, [resolvedChapterNumber])
 
   const lines = React.useMemo(() => {
     const map = new Map<number, { verseKey: string; position: number; text: string }[]>()
@@ -85,7 +86,7 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
   return <div className="quran-live-page" dir="rtl" translate="no" ref={pageRef}>
     <div className="live-page-number">{page}</div>
     {showFinger && <div className="live-finger" aria-hidden="true" style={fingerStyle}>☝</div>}
-    <div dir="ltr" style={{ direction: 'ltr', marginBottom: 12 }}><LiveRecitationControls chapterNumber={chapterNumber} onSync={(verseKey, wordIndex) => { setLiveActiveVerse(verseKey); setLiveActiveWordIndex(wordIndex) }} onStatus={onStatus}/></div>
+    <div dir="ltr" style={{ direction: 'ltr', marginBottom: 12 }}><LiveRecitationControls chapterNumber={resolvedChapterNumber} onSync={(verseKey, wordIndex) => { setLiveActiveVerse(verseKey); setLiveActiveWordIndex(wordIndex) }} onStatus={onStatus}/></div>
     {lines.map(([lineNumber, words]) => { const active = effectiveActiveVerse ? words.some(w => w.verseKey === effectiveActiveVerse) : false; return <div key={lineNumber} className={`live-quran-line ${active ? 'active-line' : ''}`} style={active ? ({ '--highlight': highlight } as React.CSSProperties) : undefined}>{words.map(w => { const isActiveWord = Boolean(effectiveActiveVerse && w.verseKey === effectiveActiveVerse && activeWord && w.position === activeWord.position); return <span ref={isActiveWord ? activeWordRef : null} key={`${w.verseKey}-${w.position}`} className={isActiveWord ? 'active-live-word' : w.verseKey === effectiveActiveVerse ? 'active-live-word-soft' : ''}>{w.text} </span> })}</div> })}
     <div className="live-translations" translate="no">{translationRows.map(({verse, translations}) => <div key={verse.verse_key} className="live-translation-verse"><span className="live-translation-key">{verse.verse_key}</span>{translations.map(item => <div key={`${item.resource_id}-${item.language}`} className={`live-translation live-translation-${item.language}`} dir={item.language === 'en' ? 'ltr' : 'rtl'}><span className="live-translation-label">{languageLabel(item.language)}</span><span dangerouslySetInnerHTML={{ __html: item.text }} /></div>)}</div>)}</div>
     {exportCanvasRef && <canvas ref={exportCanvasRef} width={1280} height={720} aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />}
