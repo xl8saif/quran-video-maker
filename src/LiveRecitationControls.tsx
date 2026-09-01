@@ -11,6 +11,7 @@ type Props = {
 
 export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Props) {
   const audioRef = React.useRef<HTMLAudioElement>(null)
+  const statusRef = React.useRef(onStatus)
   const [reciters, setReciters] = React.useState<Reciter[]>([])
   const [reciterId, setReciterId] = React.useState<number | ''>('')
   const [audio, setAudio] = React.useState<ChapterAudioTiming | null>(null)
@@ -19,6 +20,8 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
   const [playing, setPlaying] = React.useState(false)
   const [currentMs, setCurrentMs] = React.useState(0)
   const [error, setError] = React.useState('')
+
+  React.useEffect(() => { statusRef.current = onStatus }, [onStatus])
 
   React.useEffect(() => {
     let cancelled = false
@@ -51,16 +54,16 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
         audioRef.current.src = result.audioUrl
         audioRef.current.load()
       }
-      onStatus?.('Quran Foundation recitation loaded')
+      statusRef.current?.('Quran Foundation recitation loaded')
     }).catch(errorValue => {
       if (!cancelled) {
         setAudio(null)
         setError(errorValue instanceof Error ? errorValue.message : 'Unable to load recitation.')
-        onStatus?.('Quran Foundation recitation unavailable')
+        statusRef.current?.('Quran Foundation recitation unavailable')
       }
     }).finally(() => { if (!cancelled) setLoadingAudio(false) })
     return () => { cancelled = true }
-  }, [chapterNumber, reciterId, onStatus])
+  }, [chapterNumber, reciterId])
 
   const handleTime = (timeMs: number) => {
     setCurrentMs(timeMs)
