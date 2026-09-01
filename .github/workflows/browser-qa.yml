@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   browser-qa:
@@ -23,14 +23,24 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Commit generated package lock
+        run: |
+          if git status --porcelain package-lock.json | grep -q .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "chore: add npm package lock"
+            git push
+          fi
+
       - name: Inspect dependency audit
         run: npm audit --json || true
 
       - name: Install Playwright
-        run: npx playwright@1.55.0 install --with-deps chromium
+        run: npx playwright@1.62.1 install --with-deps chromium
 
       - name: Run production browser QA
-        run: npx playwright@1.55.0 test
+        run: npx playwright@1.62.1 test
 
       - name: Upload Playwright report
         if: always()
