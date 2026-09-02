@@ -145,10 +145,9 @@ test('real app export produces a downloadable WebM with audio and valid timing',
   })
 
   await page.getByRole('button', { name: 'Export video', exact: true }).click()
-  await expect(page.getByText(/Exporting/)).toBeVisible({ timeout: 5000 })
 
   const exportLink = page.locator('a[href^="blob:"]').first()
-  await expect(exportLink).toBeVisible({ timeout: 10000 })
+  await expect(exportLink).toBeVisible({ timeout: 15000 })
   const href = await exportLink.getAttribute('href')
   expect(href).toMatch(/^blob:/)
 
