@@ -9,19 +9,6 @@
     <title>Waraq Quran Reel Maker</title>
     <link rel="stylesheet" href="/src/theme.css" />
     <link rel="stylesheet" href="/src/branding-and-font-fixes.css" />
-    <script>
-      (() => {
-        try {
-          const blocked = new Set(['qvm_qf_token', 'qvm_qf_client'])
-          localStorage.removeItem('qvm_qf_token')
-          localStorage.removeItem('qvm_qf_client')
-          const originalGetItem = Storage.prototype.getItem
-          const originalSetItem = Storage.prototype.setItem
-          Storage.prototype.getItem = function (key) { return blocked.has(key) ? null : originalGetItem.call(this, key) }
-          Storage.prototype.setItem = function (key, value) { if (blocked.has(key)) return; return originalSetItem.call(this, key, value) }
-        } catch {}
-      })()
-    </script>
   </head>
   <body>
     <div id="root"></div>
