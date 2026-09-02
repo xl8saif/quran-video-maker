@@ -9,11 +9,12 @@ import { LiveRecitationControls } from './LiveRecitationControls'
 type ExportMedia = { url?: string; kind?: 'image' | 'video' | 'upload'; opacity?: number; fit?: 'cover' | 'contain' | 'fill'; x?: number; y?: number }
 type ExportLogo = { url?: string; opacity?: number; size?: number; x?: number; y?: number }
 type ExportTranslation = { language: string; text: string }
-type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; chapterNumber?: number; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null>; exportBackground?: ExportMedia; exportLogo?: ExportLogo; exportTranslations?: ExportTranslation[]; translationLanguages?: TranslationLanguage[] }
+type ExternalTranslation = { language: TranslationLanguage; title: string; author: string; version: string; entries: Record<string, string> }
+type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; chapterNumber?: number; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null>; exportBackground?: ExportMedia; exportLogo?: ExportLogo; exportTranslations?: ExportTranslation[]; translationLanguages?: TranslationLanguage[]; externalTranslations?: ExternalTranslation[]; searchQuery?: string }
 
 function languageLabel(language: TranslationLanguage) { return language === 'en' ? 'English' : language === 'ur' ? 'Urdu' : 'Arabic' }
 
-export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', chapterNumber, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [], translationLanguages = [] }: Props) {
+export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', chapterNumber, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [], translationLanguages = [], externalTranslations = [], searchQuery = '' }: Props) {
   const [verses, setVerses] = React.useState<ApiVerse[]>([])
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -38,11 +39,22 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
 
   React.useEffect(() => { setLiveActiveVerse(''); setLiveActiveWordIndex(0) }, [resolvedChapterNumber])
 
+  const filteredVerses = React.useMemo(() => {
+    const q = searchQuery.trim().toLocaleLowerCase()
+    if (!q) return verses
+    return verses.filter(verse => {
+      const arabic = (verse.words || []).map(word => styleId === 'indo-pak-muhammadi' ? (word.text_indopak || '') : (word.text_qpc_hafs || word.text_uthmani || '')).join(' ')
+      const qfText = (verse.translations || []).map(item => item.text || '').join(' ')
+      const externalText = externalTranslations.map(source => source.entries[verse.verse_key] || '').join(' ')
+      return `${verse.verse_key} ${arabic} ${qfText} ${externalText}`.toLocaleLowerCase().includes(q)
+    })
+  }, [verses, searchQuery, styleId, externalTranslations])
+
   const lines = React.useMemo(() => {
     const map = new Map<number, { verseKey: string; position: number; text: string }[]>()
-    verses.flatMap(v => v.words || []).forEach(w => { const text = styleId === 'indo-pak-muhammadi' ? (w.text_indopak || '') : (w.text_qpc_hafs || w.text_uthmani || ''); if (!text) return; const line = map.get(w.line_number) || []; line.push({ verseKey: w.verse_key, position: w.position, text }); map.set(w.line_number, line) })
+    filteredVerses.flatMap(v => v.words || []).forEach(w => { const text = styleId === 'indo-pak-muhammadi' ? (w.text_indopak || '') : (w.text_qpc_hafs || w.text_uthmani || ''); if (!text) return; const line = map.get(w.line_number) || []; line.push({ verseKey: w.verse_key, position: w.position, text }); map.set(w.line_number, line) })
     return [...map.entries()].sort((a,b) => a[0]-b[0]).map(([line, words]) => [line, words.sort((a,b) => a.position-b.position)] as const)
-  }, [verses, styleId])
+  }, [filteredVerses, styleId])
 
   const activeWord = React.useMemo(() => effectiveActiveVerse ? (verses.find(v => v.verse_key === effectiveActiveVerse)?.words || [])[effectiveActiveWordIndex] || null : null, [verses, effectiveActiveVerse, effectiveActiveWordIndex])
 
@@ -74,13 +86,16 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
 
   if (loading || translationsLoading && translationLanguages.length > 0 && !verses.length) return <div className="live-mushaf-state">Loading verified Mushaf page {page}…{exportCanvas}</div>
   if (error) return <div className="live-mushaf-state error"><strong>Live Mushaf not loaded</strong><span>{error}</span><small>The app could not retrieve this Mushaf page through its secure backend connection.</small>{exportCanvas}</div>
-  if (!lines.length) return <div className="live-mushaf-state">No page data returned.{exportCanvas}</div>
+  if (!lines.length) return <div className="live-mushaf-state">{searchQuery ? 'No matching verses on this page.' : 'No page data returned.'}{exportCanvas}</div>
   return <div className="quran-live-page" dir="rtl" translate="no" ref={pageRef}>
     <div className="live-page-number">{page}</div>
     {showFinger && <div className="live-finger" aria-hidden="true" style={fingerStyle}>☝</div>}
     <div dir="ltr" style={{ direction: 'ltr', marginBottom: 12 }}><LiveRecitationControls chapterNumber={resolvedChapterNumber} onSync={(verseKey, wordIndex) => { setLiveActiveVerse(verseKey); setLiveActiveWordIndex(wordIndex) }} onStatus={onStatus}/></div>
     {lines.map(([lineNumber, words]) => { const active = effectiveActiveVerse ? words.some(w => w.verseKey === effectiveActiveVerse) : false; return <div key={lineNumber} className={`live-quran-line ${active ? 'active-line' : ''}`} style={active ? ({ '--highlight': highlight } as React.CSSProperties) : undefined}>{words.map(w => { const isActiveWord = Boolean(effectiveActiveVerse && w.verseKey === effectiveActiveVerse && activeWord && w.position === activeWord.position); return <span ref={isActiveWord ? activeWordRef : null} key={`${w.verseKey}-${w.position}`} className={isActiveWord ? 'active-live-word' : w.verseKey === effectiveActiveVerse ? 'active-live-word-soft' : ''}>{w.text} </span> })}</div> })}
-    <div className="live-translations" translate="no">{translationRows.map(({verse, translations}) => <div key={verse.verse_key} className="live-translation-verse"><span className="live-translation-key">{verse.verse_key}</span>{translations.map(item => <div key={`${item.resource_id}-${item.language}`} className={`live-translation live-translation-${item.language}`} dir={item.language === 'en' ? 'ltr' : 'rtl'}><span className="live-translation-label">{languageLabel(item.language)}</span><span dangerouslySetInnerHTML={{ __html: item.text }} /></div>)}</div>)}</div>
+    <div className="live-translations" translate="no">
+      {translationRows.map(({verse, translations}) => <div key={verse.verse_key} className="live-translation-verse"><span className="live-translation-key">{verse.verse_key}</span>{translations.map(item => <div key={`${item.resource_id}-${item.language}`} className={`live-translation live-translation-${item.language}`} dir={item.language === 'en' ? 'ltr' : 'rtl'}><span className="live-translation-label">{languageLabel(item.language)}</span><span dangerouslySetInnerHTML={{ __html: item.text }} /></div>)}</div>)}
+      {externalTranslations.map(source => filteredVerses.filter(verse => source.entries[verse.verse_key]).map(verse => <div key={`${source.key}-${verse.verse_key}`} className="live-translation-verse"><span className="live-translation-key">{verse.verse_key}</span><div className={`live-translation live-translation-${source.language}`} dir={source.language === 'en' ? 'ltr' : 'rtl'}><span className="live-translation-label">{languageLabel(source.language)} · {source.title}</span><span>{source.entries[verse.verse_key]}</span></div></div>))}
+    </div>
     {exportCanvas}
   </div>
 }
