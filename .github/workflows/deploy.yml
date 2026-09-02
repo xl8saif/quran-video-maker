@@ -1,4 +1,4 @@
-name: Build deployment artifact
+name: Deploy to Cloudflare
 
 on:
   push:
@@ -9,28 +9,41 @@ permissions:
   contents: read
 
 concurrency:
-  group: deployment-build
+  group: cloudflare-production
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: npm
+
       - name: Install dependencies
-        run: npm install
-      - name: Download official Tanzil Uthmani text
-        run: |
-          curl --fail --location --retry 3 --output quran-uthmani.txt \
-            'https://tanzil.net/pub/download/index.php?quranType=uthmani&outType=txt-2&agree=true&marks=true&sajdah=true&rub=true&stanween=true'
-      - name: Build verified Quran dataset
-        run: node scripts/import-tanzil-uthmani.mjs quran-uthmani.txt data/quran/tanzil-uthmani.json
+        run: npm ci
+
+      - name: Verify translations
+        run: node scripts/verify-translations.mjs
+
+      - name: Unit tests
+        run: npm test
+
       - name: Type-check
         run: npm run typecheck
-      - name: Production build
+
+      - name: Build
         run: npm run build
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
