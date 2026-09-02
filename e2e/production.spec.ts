@@ -28,14 +28,15 @@ test('export is initially available and does not start without user action', asy
   await expect(page.getByText(/Exporting/)).toHaveCount(0)
 })
 
-test('export playback speed control exposes supported speeds and updates selection', async ({ page }) => {
+test('preview speed control is available and updates across its supported range', async ({ page }) => {
   await page.goto('/')
-  const speed = page.getByText('Playback speed', { exact: true }).locator('..').locator('select')
+  const speed = page.getByText('Speed', { exact: true }).locator('..').locator('input[type="range"]')
   await expect(speed).toBeVisible()
-  await expect(speed.locator('option')).toHaveText(['0.75×', '1×', '1.25×', '1.5×', '2×'])
+  await expect(speed).toHaveAttribute('min', '25')
+  await expect(speed).toHaveAttribute('max', '100')
 
-  for (const value of ['0.75', '1', '1.25', '1.5', '2']) {
-    await speed.selectOption(value)
+  for (const value of ['25', '50', '75', '100']) {
+    await speed.fill(value)
     await expect(speed).toHaveValue(value)
   }
 })
