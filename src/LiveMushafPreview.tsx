@@ -9,7 +9,7 @@ import { LiveRecitationControls } from './LiveRecitationControls'
 type ExportMedia = { url?: string; kind?: 'image' | 'video' | 'upload'; opacity?: number; fit?: 'cover' | 'contain' | 'fill'; x?: number; y?: number }
 type ExportLogo = { url?: string; opacity?: number; size?: number; x?: number; y?: number }
 type ExportTranslation = { language: string; text: string }
-type ExternalTranslation = { language: TranslationLanguage; title: string; author: string; version: string; entries: Record<string, string> }
+type ExternalTranslation = { key: string; language: TranslationLanguage; title: string; author: string; version: string; entries: Record<string, string> }
 type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; chapterNumber?: number; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null>; exportBackground?: ExportMedia; exportLogo?: ExportLogo; exportTranslations?: ExportTranslation[]; translationLanguages?: TranslationLanguage[]; externalTranslations?: ExternalTranslation[]; searchQuery?: string }
 
 function languageLabel(language: TranslationLanguage) { return language === 'en' ? 'English' : language === 'ur' ? 'Urdu' : 'Arabic' }
