@@ -51,3 +51,5 @@ jobs:
           name: playwright-report
           path: playwright-report/
           if-no-files-found: ignore
+
+# Keep this workflow push-triggered so every production change receives the same browser gate.
