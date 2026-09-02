@@ -28,7 +28,7 @@ function fallbackVerseData(data: any, page: number) {
   }
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export async function GET(req: Request): Promise<Response> {
   if (req.method !== 'GET') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json', Allow: 'GET' } })
   try {
     const requestUrl = new URL(req.url)
