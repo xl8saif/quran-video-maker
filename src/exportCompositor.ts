@@ -10,11 +10,18 @@ export interface ExportCompositorOptions {
 
 const imageCache = new Map<string, HTMLImageElement>()
 
+function isRemoteHttpUrl(url: string) {
+  return /^https?:\/\//i.test(url)
+}
+
 function loadImage(url: string): Promise<HTMLImageElement> {
   const cached = imageCache.get(url)
   if (cached) return Promise.resolve(cached)
   return new Promise((resolve, reject) => {
     const image = new Image()
+    if (isRemoteHttpUrl(url) && new URL(url, window.location.href).origin !== window.location.origin) {
+      image.crossOrigin = 'anonymous'
+    }
     image.onload = () => { imageCache.set(url, image); resolve(image) }
     image.onerror = () => reject(new Error(`Unable to load image: ${url}`))
     image.src = url
@@ -68,6 +75,9 @@ export async function createExportCompositor(options: ExportCompositorOptions) {
   if (options.background?.url) {
     if (options.background.kind === 'video') {
       backgroundVideo = document.createElement('video')
+      if (isRemoteHttpUrl(options.background.url) && new URL(options.background.url, window.location.href).origin !== window.location.origin) {
+        backgroundVideo.crossOrigin = 'anonymous'
+      }
       backgroundVideo.src = options.background.url
       backgroundVideo.muted = true
       backgroundVideo.loop = true
