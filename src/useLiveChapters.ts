@@ -1,6 +1,15 @@
 import React from 'react'
 import { surahCatalog } from './surahCatalog'
-import type { LiveChapter } from './liveChaptersApi'
+
+export type LiveChapter = {
+  id: number
+  name_simple: string
+  name_arabic?: string
+  verses_count: number
+  revelation_place?: string
+  revelation_order?: number
+  pages?: number[]
+}
 
 export function useLiveChapters(_language = 'en') {
   const chapters = React.useMemo<LiveChapter[]>(
