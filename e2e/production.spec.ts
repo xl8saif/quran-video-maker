@@ -20,6 +20,9 @@ test('Surah, language and translation-library controls are interactive', async (
   await surah.selectOption('2')
   await expect(surah).toHaveValue('2')
 
+  // Selecting a surah starts local translation fetches. Wait for those
+  // requests and React updates to settle before testing language controls.
+  await page.waitForLoadState('networkidle')
   await expect(page.getByText('Loading selected translations…', { exact: true })).toHaveCount(0, { timeout: 30000 })
   const app = page.locator('.app-shell')
   const quranTitle = page.getByTestId('quran-section-title')
