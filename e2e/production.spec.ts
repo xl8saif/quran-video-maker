@@ -100,3 +100,55 @@ test('Chromium can record a combined canvas video and Web Audio stream', async (
   expect(result.size).toBeGreaterThan(0)
   expect(result.type).toContain('video/webm')
 })
+
+test('real app export produces a downloadable WebM from a loaded audio source', async ({ page }) => {
+  await page.goto('/')
+
+  const audioDataUrl = await page.evaluate(() => {
+    const sampleRate = 8000
+    const durationSeconds = 1
+    const samples = sampleRate * durationSeconds
+    const buffer = new ArrayBuffer(44 + samples * 2)
+    const view = new DataView(buffer)
+    const write = (offset: number, value: string) => [...value].forEach((char, index) => view.setUint8(offset + index, char.charCodeAt(0)))
+    write(0, 'RIFF')
+    view.setUint32(4, 36 + samples * 2, true)
+    write(8, 'WAVE')
+    write(12, 'fmt ')
+    view.setUint32(16, 16, true)
+    view.setUint16(20, 1, true)
+    view.setUint16(22, 1, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, sampleRate * 2, true)
+    view.setUint16(32, 2, true)
+    view.setUint16(34, 16, true)
+    write(36, 'data')
+    view.setUint32(40, samples * 2, true)
+    for (let i = 0; i < samples; i += 1) {
+      const sample = Math.round(Math.sin((i / sampleRate) * Math.PI * 2 * 440) * 8000)
+      view.setInt16(44 + i * 2, sample, true)
+    }
+    let binary = ''
+    const bytes = new Uint8Array(buffer)
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i])
+    return `data:audio/wav;base64,${btoa(binary)}`
+  })
+
+  await page.locator('audio').evaluate((audio, src) => {
+    const element = audio as HTMLAudioElement
+    element.src = src
+    element.load()
+  }, audioDataUrl)
+  await page.waitForFunction(() => {
+    const audio = document.querySelector('audio') as HTMLAudioElement | null
+    return Boolean(audio && Number.isFinite(audio.duration) && audio.duration > 0)
+  })
+
+  await page.getByRole('button', { name: 'Export video', exact: true }).click()
+  await expect(page.getByText(/Exporting/)).toBeVisible({ timeout: 5000 })
+
+  const exportLink = page.locator('a[href^="blob:"]').first()
+  await expect(exportLink).toBeVisible({ timeout: 10000 })
+  const href = await exportLink.getAttribute('href')
+  expect(href).toMatch(/^blob:/)
+})
