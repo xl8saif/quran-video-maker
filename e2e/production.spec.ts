@@ -17,7 +17,7 @@ test('Surah, language and translation-library controls are interactive', async (
   await surah.selectOption('2')
   await expect(surah).toHaveValue('2')
 
-  const language = page.getByLabel('Language')
+  const language = page.getByLabel('Language', { exact: true })
   await expect(language).toBeVisible()
   await language.selectOption('ur')
   await expect(language).toHaveValue('ur')
