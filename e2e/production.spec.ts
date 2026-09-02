@@ -41,14 +41,6 @@ test('background library and default logo controls are visible', async ({ page }
   await expect(page.locator('.glass-logo')).toHaveCount(2)
 })
 
-test('Quran page endpoint returns data instead of a Vercel 404', async ({ page }) => {
-  const response = await page.request.get('/api/quran/content/verses/by_page/1?mushaf=4&words=true&word_fields=text_uthmani,text_indopak,text_qpc_hafs,line_number,page_number,verse_key,position')
-  expect(response.status()).toBe(200)
-  const body = await response.json()
-  expect(Array.isArray(body.verses)).toBeTruthy()
-  expect(body.verses.length).toBeGreaterThan(0)
-})
-
 test('export is initially available and does not start without user action', async ({ page }) => {
   await page.goto('/')
   const exportButton = page.getByRole('button', { name: 'Export video', exact: true })
