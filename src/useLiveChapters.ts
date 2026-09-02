@@ -1,31 +1,17 @@
 import React from 'react'
-import { fetchLiveChapters, type LiveChapter } from './liveChaptersApi'
+import { surahCatalog } from './surahCatalog'
+import type { LiveChapter } from './liveChaptersApi'
 
-export function useLiveChapters(language = 'en') {
-  const [chapters, setChapters] = React.useState<LiveChapter[]>([])
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState('')
+export function useLiveChapters(_language = 'en') {
+  const chapters = React.useMemo<LiveChapter[]>(
+    () => surahCatalog.map(surah => ({
+      id: surah.number,
+      name_simple: surah.name,
+      name_arabic: surah.arabic,
+      verses_count: surah.ayahs,
+    })),
+    [],
+  )
 
-  React.useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError('')
-
-    fetchLiveChapters(language)
-      .then(result => {
-        if (!cancelled) setChapters(result)
-      })
-      .catch(reason => {
-        if (cancelled) return
-        setChapters([])
-        setError(reason instanceof Error ? reason.message : 'Unable to load Quran chapters.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => { cancelled = true }
-  }, [language])
-
-  return { chapters, loading, error }
+  return { chapters, loading: false, error: '' }
 }
