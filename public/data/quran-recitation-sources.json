@@ -1,0 +1,40 @@
+{
+  "dataset": "Waraq Quran Reel Maker recitation sources",
+  "coverage": "whole Quran (114 surahs / 6236 ayahs)",
+  "policy": "Use only sources whose individual recording license permits the intended use. Do not mirror audio bytes merely because a public URL exists.",
+  "open_license_sources": [
+    {
+      "id": "saud-al-shuraim-cc-by",
+      "reciter": "Saud Al-Shuraim",
+      "coverage": "114 surahs",
+      "license": "CC BY",
+      "source": "SoundCloud listing identified as CC-BY",
+      "url": "https://soundcloud.com/quran-audio-205851837/sets/entire-quran-recited-by-sheikh-saud-shuraim",
+      "use": "stream/reference; preserve attribution"
+    },
+    {
+      "id": "quranlab-cc-by-timing",
+      "name": "QuranLab Quran Audio",
+      "coverage": "whole Quran reference manifest; CC-BY timing for cleared recordings",
+      "license": "mixed; CC BY 4.0 for timing data, reference-only for many audio recordings",
+      "url": "https://huggingface.co/datasets/quranlab/quran-audio",
+      "use": "metadata/timing only unless the specific audio row is independently cleared"
+    }
+  ],
+  "reference_only_sources": [
+    {
+      "id": "everyayah",
+      "coverage": "complete Quran recitation collections",
+      "license": "recording-specific; do not assume commercial or redistribution rights",
+      "url": "https://everyayah.com/"
+    },
+    {
+      "id": "quranicaudio",
+      "coverage": "complete Quran recitation collections",
+      "license": "free for personal use according to site terms; not a general commercial redistribution license",
+      "url": "https://quranicaudio.com/about"
+    }
+  ],
+  "attribution_required": true,
+  "note": "This manifest deliberately does not bundle third-party audio binaries. Recitation recordings are separately copyrighted works; the app should stream or download only when the applicable recording license permits it."
+}
