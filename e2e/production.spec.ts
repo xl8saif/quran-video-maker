@@ -22,14 +22,22 @@ test('Surah, language and translation-library controls are interactive', async (
 
   await expect(page.getByText('Loading selected translations…', { exact: true })).toHaveCount(0, { timeout: 30000 })
   const languageSwitcher = page.locator('.language-switcher')
+  const app = page.locator('.app-shell')
+  const quranTitle = page.getByTestId('quran-section-title')
+
   await languageSwitcher.getByRole('button', { name: 'Ur', exact: true }).click()
-  await expect(page.locator('.app-shell.theme-ur')).toBeVisible({ timeout: 10000 })
-  await expect(page.locator('.app-shell.theme-ur .section-title').filter({ hasText: 'قرآن' })).toBeVisible({ timeout: 10000 })
+  await expect(app).toHaveAttribute('data-ui-language', 'ur')
+  await expect(quranTitle).toHaveText('قرآن')
+  await expect(languageSwitcher.getByRole('button', { name: 'Ur', exact: true })).toHaveAttribute('aria-pressed', 'true')
+
   await languageSwitcher.getByRole('button', { name: 'Ar', exact: true }).click()
-  await expect(page.locator('.app-shell.theme-ar')).toBeVisible({ timeout: 10000 })
-  await expect(page.locator('.app-shell.theme-ar .section-title').filter({ hasText: 'القرآن' })).toBeVisible({ timeout: 10000 })
+  await expect(app).toHaveAttribute('data-ui-language', 'ar')
+  await expect(quranTitle).toHaveText('القرآن')
+  await expect(languageSwitcher.getByRole('button', { name: 'Ar', exact: true })).toHaveAttribute('aria-pressed', 'true')
+
   await languageSwitcher.getByRole('button', { name: 'En', exact: true }).click()
-  await expect(page.locator('.app-shell.theme-en')).toBeVisible({ timeout: 10000 })
+  await expect(app).toHaveAttribute('data-ui-language', 'en')
+  await expect(quranTitle).toHaveText('Quran')
 
   await page.getByRole('button', { name: 'Open translation library', exact: true }).click()
   await expect(page.getByText('Open translation sources', { exact: true })).toBeVisible()
