@@ -4,7 +4,7 @@ import { surahCatalog } from './surahCatalog'
 export type LiveChapter = {
   id: number
   name_simple: string
-  name_arabic?: string
+  name_arabic: string
   verses_count: number
   revelation_place?: string
   revelation_order?: number
