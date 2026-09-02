@@ -1,6 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { BookOpen, Download, Languages, Pause, Play, Search, Upload, X } from 'lucide-react'
+import { BookOpen, Download, Languages, Search, Upload, X } from 'lucide-react'
 import './styles.css'
 import './mobile.css'
 import { mushafStyles, defaultMushafStyle, type MushafStyleId } from './mushafStyles'
@@ -61,7 +61,7 @@ function App(){
  React.useEffect(()=>{let cancelled=false;const active=selectedSources.map(id=>sourceCatalog[id]).filter(Boolean);if(!active.length)return;setSourceLoading(true);Promise.all(active.map(async source=>{const verses=await fetchQuranEncSurah(source.key,surahNumber);const entries:Record<string,string>={};verses.forEach(v=>{entries[`${v.sura}:${v.aya}`]=v.translation});return [source.language_iso_code+':'+source.key,entries] as const})).then(results=>{if(cancelled)return;setSourceEntries(previous=>{const next={...previous};results.forEach(([id,entries])=>{next[id]=entries});return next})}).catch(()=>setStatus('Unable to load the selected translation.')).finally(()=>{if(!cancelled)setSourceLoading(false)});return()=>{cancelled=true}},[selectedSources,sourceCatalog,surahNumber])
 
  React.useEffect(()=>()=>{runtimeRef.current.destroy();if(exportUrl)URL.revokeObjectURL(exportUrl);if(background?.url&&background.kind==='upload')URL.revokeObjectURL(background.url);if(logoUrl)URL.revokeObjectURL(logoUrl)},[])
- React.useEffect(()=>runtimeRef.current.subscribe(state=>{setExporting(state.status==='recording');setExportProgress(state.progress);if(state.blobUrl)setExportUrl(previous=>{if(previous&&previous!==state.blobUrl)URL.revokeObjectURL(previous);return state.blobUrl});if(state.status==='error')setStatus(state.error||'Export failed')}),[])
+ React.useEffect(()=>runtimeRef.current.subscribe(state=>{setExporting(state.status==='recording');setExportProgress(state.progress);if(state.blobUrl)setExportUrl(previous=>{if(previous&&previous!==state.blobUrl)URL.revokeObjectURL(previous);return state.blobUrl??null});if(state.status==='error')setStatus(state.error||'Export failed')}),[])
  React.useEffect(()=>{runtimeRef.current.setMedia({canvas:exportCanvasRef.current!,audio:audioRef.current})},[])
 
  const externalTranslations=selectedSources.map(id=>{const source=sourceCatalog[id];if(!source)return null;return {key:id,language:source.language_iso_code as TranslationLanguage,title:source.title,author:source.title,version:source.version,entries:sourceEntries[id]||{}}}).filter(Boolean) as ExternalSource[]
@@ -93,7 +93,7 @@ function App(){
     <section className="panel-section"><div className="section-title">{t.background}</div><label className="upload-box"><Upload size={18}/><span>{background?.name||t.background}</span><small>Image or video</small><input hidden type="file" accept="image/*,video/*" onChange={e=>{const f=e.target.files?.[0];if(f)handleBackground(f)}}/></label><label>Opacity</label><input type="range" min="0" max="100" value={backgroundOpacity} onChange={e=>setBackgroundOpacity(Number(e.target.value))}/><label>{t.logo}</label><label className="upload-box"><span>{logoUrl?'Logo loaded':t.logo}</span><small>PNG / JPG / WEBP</small><input hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(f)handleLogo(f)}}/></label></section>
    </aside>
    <section className="preview-area">
-    <div className="preview-toolbar"><div><strong>{t.preview}</strong><span>{selectedSurah.name} · {selectedSurah.arabic}</span></div><div className="toolbar-actions"><button className="primary" onClick={()=>setStatus('Use the recitation controls inside the Quran preview')}>{status?status:t.play}</button></div></div>
+    <div className="preview-toolbar"><div><strong>{t.preview}</strong><span>{selectedSurah.name} · {selectedSurah.arabic}</span></div></div>
     <div className="stage"><LiveMushafPreview styleId={mushafStyle} page={firstPage||1} chapterNumber={surahNumber} highlight="#d9bd63" showFinger autoScroll scrollSpeed={50} onStatus={setStatus} exportCanvasRef={exportCanvasRef} exportBackground={background?{url:background.url,kind:background.kind,opacity:backgroundOpacity/100,fit:'cover'}:undefined} exportLogo={logoUrl?{url:logoUrl,opacity:1,size:18,x:88,y:90}:undefined} exportTranslations={exportTranslations} externalTranslations={externalTranslations} searchQuery={searchQuery} /></div>
     <div className="preview-footer"><span>{selectedSurah.name} · {selectedSurah.ayahs} ayahs</span><span>{t.sourceNote}</span></div>
    </section>
