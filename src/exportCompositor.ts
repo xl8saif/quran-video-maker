@@ -29,6 +29,10 @@ function drawFit(ctx: CanvasRenderingContext2D, source: CanvasImageSource & { wi
   ctx.drawImage(source, (width - sw) * x / 100, (height - sh) * y / 100, sw, sh)
 }
 
+function isRtlLanguage(language: string) {
+  return /^(ar|ur|fa|ps|ku)([-_]|$)/i.test(language.trim())
+}
+
 export async function createExportCompositor(options: ExportCompositorOptions) {
   const { canvas } = options
   let backgroundImage: HTMLImageElement | null = null
@@ -59,7 +63,17 @@ export async function createExportCompositor(options: ExportCompositorOptions) {
     if (backgroundImage && background) { ctx.globalAlpha = background.opacity ?? 0.35; drawFit(ctx, backgroundImage, width, height, background.fit || 'cover', background.x ?? 50, background.y ?? 50); ctx.globalAlpha = 1 }
     else if (backgroundVideo && background && backgroundVideo.readyState >= 2) { ctx.globalAlpha = background.opacity ?? 0.35; drawFit(ctx, backgroundVideo, width, height, background.fit || 'cover', background.x ?? 50, background.y ?? 50); ctx.globalAlpha = 1 }
     options.drawMushaf(ctx, width, height)
-    if (options.translations?.length) { ctx.font = `${Math.max(20, width / 55)}px sans-serif`; ctx.textAlign = 'center'; ctx.direction = 'ltr'; options.translations.forEach((translation, index) => { ctx.fillStyle = '#40372b'; ctx.fillText(`${translation.language.toUpperCase()}: ${translation.text}`, width / 2, height - 70 - index * 38) }) }
+    if (options.translations?.length) {
+      ctx.font = `${Math.max(20, width / 55)}px sans-serif`
+      options.translations.forEach((translation, index) => {
+        const rtl = isRtlLanguage(translation.language)
+        ctx.fillStyle = '#40372b'
+        ctx.textAlign = 'center'
+        ctx.direction = rtl ? 'rtl' : 'ltr'
+        ctx.fillText(`${translation.language.toUpperCase()}: ${translation.text}`, width / 2, height - 70 - index * 38)
+      })
+      ctx.direction = 'ltr'
+    }
     if (logo) { const size = width * ((options.logo?.size ?? 18) / 100); const x = width * ((options.logo?.x ?? 88) / 100); const y = height * ((options.logo?.y ?? 90) / 100); ctx.globalAlpha = (options.logo?.opacity ?? 100) / 100; ctx.drawImage(logo, x - size / 2, y - size / 2, size, size); ctx.globalAlpha = 1 }
   }
 
