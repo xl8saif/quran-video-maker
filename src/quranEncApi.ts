@@ -40,23 +40,75 @@ export async function fetchQuranEncTranslations(language?: string) {
 
 export type QuranEncVerse = { sura:number; aya:number; translation:string; footnotes?:string }
 
+function parseTranslationLine(line: string, surah: number): QuranEncVerse | null {
+  if (!line || line.startsWith('#')) return null
+
+  const match = line.match(/^(\d+)\|(\d+)\|(.*)$/)
+  if (match) {
+    const s = Number(match[1])
+    const a = Number(match[2])
+    return s === surah ? { sura:s, aya:a, translation:match[3] } : null
+  }
+
+  const bracket = line.match(/^\[(\d+):(\d+)\]\s*(.*)$/)
+  if (bracket) {
+    const s = Number(bracket[1])
+    if (s === surah) return { sura:s, aya:Number(bracket[2]), translation:bracket[3] }
+  }
+
+  return null
+}
+
 async function fetchLocalTranslation(source: QuranEncTranslation, surah: number): Promise<QuranEncVerse[]> {
   if (!source.localPath) return []
   const response = await fetch(source.localPath, { headers:{ accept:'text/plain' } })
   if (!response.ok) throw new Error(`Bundled translation unavailable (${response.status})`)
-  const text = await response.text()
+
   const result: QuranEncVerse[] = []
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim()
-    if (!line || line.startsWith('#')) continue
-    const match = line.match(/^(\d+)\|(\d+)\|(.*)$/)
-    if (match) {
-      const s = Number(match[1]); const a = Number(match[2])
-      if (s === surah) result.push({ sura:s, aya:a, translation:match[3] })
-      continue
+  const reader = response.body?.getReader()
+
+  // Stream the ordered translation file so selecting a surah does not block
+  // the main thread by splitting/parsing the entire multi-megabyte file at once.
+  if (reader) {
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let reachedTarget = false
+
+    try {
+      while (!reachedTarget) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream:true })
+        const lines = buffer.split(/\r?\n/)
+        buffer = lines.pop() || ''
+
+        for (const raw of lines) {
+          const line = raw.trim()
+          if (!line || line.startsWith('#')) continue
+          const match = line.match(/^(\d+)\|(\d+)\|(.*)$/)
+          if (match && Number(match[1]) > surah) {
+            reachedTarget = true
+            break
+          }
+          const entry = parseTranslationLine(line, surah)
+          if (entry) result.push(entry)
+        }
+      }
+    } finally {
+      await reader.cancel()
     }
-    const bracket = line.match(/^\[(\d+):(\d+)\]\s*(.*)$/)
-    if (bracket && Number(bracket[1]) === surah) result.push({ sura:Number(bracket[1]), aya:Number(bracket[2]), translation:bracket[3] })
+
+    if (!reachedTarget && buffer) {
+      const entry = parseTranslationLine(buffer.trim(), surah)
+      if (entry) result.push(entry)
+    }
+    return result
+  }
+
+  const text = await response.text()
+  for (const raw of text.split(/\r?\n/)) {
+    const entry = parseTranslationLine(raw.trim(), surah)
+    if (entry) result.push(entry)
   }
   return result
 }
