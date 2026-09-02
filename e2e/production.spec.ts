@@ -56,3 +56,47 @@ test('preview speed control is available and updates across its supported range'
     await expect(speed).toHaveValue(value)
   }
 })
+
+test('Chromium can record a combined canvas video and Web Audio stream', async ({ page }) => {
+  await page.goto('/')
+  const result = await page.evaluate(async () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 320
+    canvas.height = 180
+    document.body.appendChild(canvas)
+    const context = new AudioContext()
+    const oscillator = context.createOscillator()
+    const destination = context.createMediaStreamDestination()
+    oscillator.frequency.value = 440
+    oscillator.connect(destination)
+    const videoStream = canvas.captureStream(10)
+    const combined = new MediaStream([
+      ...videoStream.getVideoTracks(),
+      ...destination.stream.getAudioTracks().map(track => track.clone()),
+    ])
+    const audioTracks = combined.getAudioTracks().length
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+      ? 'video/webm;codecs=vp9,opus'
+      : 'video/webm'
+    const chunks: BlobPart[] = []
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      const recorder = new MediaRecorder(combined, { mimeType })
+      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data) }
+      recorder.onerror = () => reject(new Error('MediaRecorder failed'))
+      recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }))
+      oscillator.start()
+      void context.resume()
+      recorder.start()
+      window.setTimeout(() => recorder.stop(), 350)
+    })
+    oscillator.stop()
+    combined.getTracks().forEach(track => track.stop())
+    await context.close()
+    canvas.remove()
+    return { audioTracks, size: blob.size, type: blob.type }
+  })
+
+  expect(result.audioTracks).toBeGreaterThan(0)
+  expect(result.size).toBeGreaterThan(0)
+  expect(result.type).toContain('video/webm')
+})
