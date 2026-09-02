@@ -20,6 +20,7 @@ describe('export panel helpers', () => {
       fps: 30,
       mushafStyle: 'hafs-arabic-naskh',
       translationLanguage: 'none',
+      playbackSpeed: 1,
       filename: 'quran-video.webm',
     })
     expect(EXPORT_RESOLUTIONS['720p']).toEqual({ width: 1280, height: 720 })
