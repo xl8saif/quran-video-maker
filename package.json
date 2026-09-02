@@ -4,19 +4,19 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/prepare-mushaf.mjs && vite",
+    "dev": "node scripts/prepare-mushaf.mjs && node scripts/prepare-local-fonts.mjs && vite",
     "test": "vitest run tests",
-    "build": "node scripts/prepare-mushaf.mjs && vite build",
+    "build": "node scripts/prepare-mushaf.mjs && node scripts/prepare-local-fonts.mjs && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
+    "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest"
+    "typescript": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
