@@ -2,28 +2,50 @@ import { test, expect } from '@playwright/test'
 
 test('production app loads the current Waraq Quran Reel Maker UI', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByText('Waraq Quran Reel Maker', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Waraq Quran Reel Maker', exact: true })).toBeVisible()
   await expect(page.getByText('Quran', { exact: true })).toBeVisible()
   await expect(page.getByText('Mushaf style', { exact: true })).toBeVisible()
   await expect(page.getByText('Preview', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Export video', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'En', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ar', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ur', exact: true })).toBeVisible()
 })
 
 test('Surah, language and translation-library controls are interactive', async ({ page }) => {
   await page.goto('/')
-  const surah = page.getByText('Surah', { exact: true }).locator('xpath=following-sibling::select[1]')
+  const surah = page.locator('select[aria-label="Surah selector"]')
   await expect(surah).toBeVisible()
   await expect(surah.locator('option')).toHaveCount(114, { timeout: 30000 })
   await surah.selectOption('2')
   await expect(surah).toHaveValue('2')
 
-  const language = page.locator('select.ui-language')
-  await expect(language).toBeVisible()
-  await language.selectOption('ur')
-  await expect(language).toHaveValue('ur')
+  await page.getByRole('button', { name: 'Ur', exact: true }).click()
+  await expect(page.getByText('قرآن', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Ar', exact: true }).click()
+  await expect(page.getByText('القرآن', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'En', exact: true }).click()
 
-  await page.getByRole('button', { name: 'اوپن ترجمہ لائبریری', exact: true }).click()
-  await expect(page.getByText('تراجم', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Open translation library', exact: true }).click()
+  await expect(page.getByText('Open translation sources', { exact: true })).toBeVisible()
+})
+
+test('background library and default logo controls are visible', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByText('Built-in media', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Masjid Interior/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Desert Landscape/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Waraq logo', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'CloudTrans logo', exact: true })).toBeVisible()
+  await expect(page.locator('.glass-logo')).toHaveCount(2)
+})
+
+test('Quran page endpoint returns data instead of a Vercel 404', async ({ page }) => {
+  const response = await page.request.get('/api/quran/content/verses/by_page/1?mushaf=4&words=true&word_fields=text_uthmani,text_indopak,text_qpc_hafs,line_number,page_number,verse_key,position')
+  expect(response.status()).toBe(200)
+  const body = await response.json()
+  expect(Array.isArray(body.verses)).toBeTruthy()
+  expect(body.verses.length).toBeGreaterThan(0)
 })
 
 test('export is initially available and does not start without user action', async ({ page }) => {
