@@ -10,7 +10,6 @@ export type QuranEncTranslation = {
 const BASE = 'https://quranenc.com/api/v1'
 let preferredLanguagePromise: Promise<'ar' | 'ur' | 'en'> | null = null
 let allTranslationsPromise: Promise<QuranEncTranslation[]> | null = null
-let callIndex = 0
 
 const MENA = new Set([
   'DZ','BH','EG','IQ','JO','KW','LB','LY','MR','MA','OM','PS','QA','SA','SD','SY','TN','AE','YE',
@@ -24,7 +23,7 @@ async function getPreferredLanguage(): Promise<'ar' | 'ur' | 'en'> {
     preferredLanguagePromise = fetch('/api/locale', { headers: { accept: 'application/json' } })
       .then(async response => {
         if (!response.ok) throw new Error('locale lookup failed')
-        const data = await response.json() as { country?: string; language?: string }
+        const data = await response.json() as { country?: string }
         const country = String(data.country || '').toUpperCase()
         if (MENA.has(country)) return 'ar'
         if (SOUTH_ASIA.has(country)) return 'ur'
@@ -52,21 +51,19 @@ async function getAllTranslations() {
   return allTranslationsPromise
 }
 
-export async function fetchQuranEncTranslations(_language?: string) {
+export async function fetchQuranEncTranslations(language?: string) {
   const [all, preferred] = await Promise.all([getAllTranslations(), getPreferredLanguage()])
-  const preferredOrder = [preferred, 'en', 'ur', 'ar']
-  const uniqueLanguages = preferredOrder.filter((language, index) => preferredOrder.indexOf(language) === index)
+  const preferredOrder = [preferred, 'en', 'ur', 'ar'].filter((value, index, values) => values.indexOf(value) === index)
   const sorted = [...all].sort((a, b) => {
-    const ai = uniqueLanguages.indexOf(a.language_iso_code)
-    const bi = uniqueLanguages.indexOf(b.language_iso_code)
+    const ai = preferredOrder.indexOf(a.language_iso_code)
+    const bi = preferredOrder.indexOf(b.language_iso_code)
     return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi) || a.title.localeCompare(b.title)
   })
 
-  // The existing UI requests en/ur/ar in that order. Use those three calls to
-  // seed three distinct defaults while every call still exposes the complete
-  // QuranEnc catalogue to the library.
-  const slot = callIndex++ % 3
-  const firstLanguage = uniqueLanguages[slot] || preferred
+  // The current UI requests en/ur/ar in parallel. Keep the catalogue complete,
+  // but use those calls to seed three distinct defaults in a deterministic order.
+  const requested = language === 'ur' ? 1 : language === 'ar' ? 2 : 0
+  const firstLanguage = preferredOrder[requested] || preferred
   const first = sorted.find(item => item.language_iso_code === firstLanguage)
   return first ? [first, ...sorted.filter(item => item.key !== first.key)] : sorted
 }
