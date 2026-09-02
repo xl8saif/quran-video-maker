@@ -11,13 +11,13 @@ test('production app loads the current Waraq Quran Reel Maker UI', async ({ page
 
 test('Surah, language and translation-library controls are interactive', async ({ page }) => {
   await page.goto('/')
-  const surah = page.locator('select').nth(1)
+  const surah = page.getByText('Surah', { exact: true }).locator('xpath=following-sibling::select[1]')
   await expect(surah).toBeVisible()
   await expect(surah.locator('option')).toHaveCount(114, { timeout: 30000 })
   await surah.selectOption('2')
   await expect(surah).toHaveValue('2')
 
-  const language = page.getByLabel('Language', { exact: true })
+  const language = page.locator('select.ui-language')
   await expect(language).toBeVisible()
   await language.selectOption('ur')
   await expect(language).toHaveValue('ur')
