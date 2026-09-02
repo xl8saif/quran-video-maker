@@ -20,11 +20,12 @@ test('Surah, language and translation-library controls are interactive', async (
   await surah.selectOption('2')
   await expect(surah).toHaveValue('2')
 
-  await page.getByRole('button', { name: 'Ur', exact: true }).click()
+  await expect(page.getByText('Loading selected translations…', { exact: true })).toHaveCount(0, { timeout: 30000 })
+  await page.locator('.language-switcher button').filter({ hasText: 'Ur' }).click()
   await expect(page.getByText('قرآن', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Ar', exact: true }).click()
+  await page.locator('.language-switcher button').filter({ hasText: 'Ar' }).click()
   await expect(page.getByText('القرآن', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'En', exact: true }).click()
+  await page.locator('.language-switcher button').filter({ hasText: 'En' }).click()
 
   await page.getByRole('button', { name: 'Open translation library', exact: true }).click()
   await expect(page.getByText('Open translation sources', { exact: true })).toBeVisible()
@@ -32,7 +33,7 @@ test('Surah, language and translation-library controls are interactive', async (
 
 test('background library and default logo controls are visible', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByText('Built-in media', { exact: true })).toBeVisible()
+  await expect(page.getByText('Background', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: /Masjid Interior/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /Desert Landscape/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Waraq logo', exact: true })).toBeVisible()
