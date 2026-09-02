@@ -151,4 +151,26 @@ test('real app export produces a downloadable WebM from a loaded audio source', 
   await expect(exportLink).toBeVisible({ timeout: 10000 })
   const href = await exportLink.getAttribute('href')
   expect(href).toMatch(/^blob:/)
+
+  const exported = await page.evaluate(async (url) => {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    const objectUrl = URL.createObjectURL(blob)
+    const metadata = await new Promise<{ duration: number; width: number; height: number }>((resolve, reject) => {
+      video.onloadedmetadata = () => resolve({ duration: video.duration, width: video.videoWidth, height: video.videoHeight })
+      video.onerror = () => reject(new Error('Exported WebM could not be decoded by Chromium'))
+      video.src = objectUrl
+    })
+    video.remove()
+    URL.revokeObjectURL(objectUrl)
+    return { size: blob.size, type: blob.type, ...metadata }
+  }, href)
+
+  expect(exported.size).toBeGreaterThan(1000)
+  expect(exported.type).toContain('video/webm')
+  expect(exported.duration).toBeGreaterThan(0)
+  expect(exported.width).toBeGreaterThan(0)
+  expect(exported.height).toBeGreaterThan(0)
 })
