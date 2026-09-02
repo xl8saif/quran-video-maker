@@ -22,18 +22,26 @@ type AudioGraph = {
 
 const audioSources = new WeakMap<HTMLMediaElement, AudioGraph>()
 
+type CapturableMediaElement = HTMLMediaElement & {
+  captureStream?: () => MediaStream
+}
+
 function getAudioGraph(audio: HTMLMediaElement): AudioGraph | null {
   const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!AudioContextCtor) return null
   let graph = audioSources.get(audio)
   if (!graph) {
-    const context = new AudioContextCtor()
-    const source = context.createMediaElementSource(audio)
-    const destination = context.createMediaStreamDestination()
-    source.connect(destination)
-    source.connect(context.destination)
-    graph = { context, source, destination }
-    audioSources.set(audio, graph)
+    try {
+      const context = new AudioContextCtor()
+      const source = context.createMediaElementSource(audio)
+      const destination = context.createMediaStreamDestination()
+      source.connect(destination)
+      source.connect(context.destination)
+      graph = { context, source, destination }
+      audioSources.set(audio, graph)
+    } catch {
+      return null
+    }
   }
   if (graph.context.state === 'suspended') void graph.context.resume()
   return graph
@@ -45,13 +53,30 @@ export function createCanvasAudioStream(canvas: HTMLCanvasElement, audio: HTMLMe
 
 export function createCanvasAudioStreamController(canvas: HTMLCanvasElement, audio: HTMLMediaElement | null, frameRate = 30): CanvasAudioStream {
   const videoStream = canvas.captureStream(frameRate)
-  const graph = audio ? getAudioGraph(audio) : null
-  if (graph) {
-    graph.destination.stream.getAudioTracks().forEach(track => videoStream.addTrack(track.clone()))
+  let audioStream: MediaStream | null = null
+
+  if (audio) {
+    const capturable = audio as CapturableMediaElement
+    try {
+      audioStream = capturable.captureStream?.() ?? null
+    } catch {
+      audioStream = null
+    }
+
+    if (audioStream) {
+      audioStream.getAudioTracks().forEach(track => videoStream.addTrack(track.clone()))
+    } else {
+      const graph = getAudioGraph(audio)
+      if (graph) graph.destination.stream.getAudioTracks().forEach(track => videoStream.addTrack(track.clone()))
+    }
   }
+
   return {
     stream: videoStream,
-    dispose: () => videoStream.getTracks().forEach(track => track.stop()),
+    dispose: () => {
+      videoStream.getTracks().forEach(track => track.stop())
+      audioStream?.getTracks().forEach(track => track.stop())
+    },
   }
 }
 
