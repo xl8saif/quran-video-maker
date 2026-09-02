@@ -30,7 +30,7 @@ test('export is initially available and does not start without user action', asy
 
 test('export playback speed control exposes supported speeds and updates selection', async ({ page }) => {
   await page.goto('/')
-  const speed = page.locator('label').filter({ hasText: 'Playback speed' }).locator('select')
+  const speed = page.getByText('Playback speed', { exact: true }).locator('..').locator('select')
   await expect(speed).toBeVisible()
   await expect(speed.locator('option')).toHaveText(['0.75×', '1×', '1.25×', '1.5×', '2×'])
 
