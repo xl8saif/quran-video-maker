@@ -2,7 +2,18 @@ import type { BackgroundMedia } from './backgroundMedia'
 
 const commonsFile = (name: string) => `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(name)}`
 
+// Repository-hosted backgrounds are preferred so the app can load them without
+// depending on an external media host. Add new files to public/backgrounds/ and
+// register them here with a stable id.
+const LOCAL_BACKGROUND_SOURCES: BackgroundMedia[] = [
+  { id:'local-background-1', name:'Background 1', kind:'image', url:'/backgrounds/Background (1).avif', thumbnailUrl:'/backgrounds/Background (1).avif', author:'Waraq media library', license:'User-provided', attribution:'Waraq media library', sourceUrl:'/backgrounds/Background (1).avif', verifiedRights:false },
+  { id:'local-background-2', name:'Background 2', kind:'image', url:'/backgrounds/Backgrounds (1).jpg', thumbnailUrl:'/backgrounds/Backgrounds (1).jpg', author:'Waraq media library', license:'User-provided', attribution:'Waraq media library', sourceUrl:'/backgrounds/Backgrounds (1).jpg', verifiedRights:false },
+  { id:'local-background-3', name:'Background 3', kind:'image', url:'/backgrounds/Backgrounds (2).jpg', thumbnailUrl:'/backgrounds/Backgrounds (2).jpg', author:'Waraq media library', license:'User-provided', attribution:'Waraq media library', sourceUrl:'/backgrounds/Backgrounds (2).jpg', verifiedRights:false },
+  { id:'local-background-4', name:'Background 4', kind:'image', url:'/backgrounds/Backgrounds (3).jpg', thumbnailUrl:'/backgrounds/Backgrounds (3).jpg', author:'Waraq media library', license:'User-provided', attribution:'Waraq media library', sourceUrl:'/backgrounds/Backgrounds (3).jpg', verifiedRights:false },
+]
+
 export const BUILTIN_BACKGROUND_SOURCES: BackgroundMedia[] = [
+  ...LOCAL_BACKGROUND_SOURCES,
   { id:'commons-masjid', name:'Masjid Interior', kind:'image', url:commonsFile('Interior of a Masjid (Mosque).jpg'), thumbnailUrl:commonsFile('Interior of a Masjid (Mosque).jpg'), author:'DaSupremo', license:'CC BY-SA 4.0', attribution:'DaSupremo / Wikimedia Commons', sourceUrl:'https://commons.wikimedia.org/wiki/File:Interior_of_a_Masjid_(Mosque).jpg', verifiedRights:true },
   { id:'commons-badshahi', name:'Badshahi Mosque Interior', kind:'image', url:commonsFile('BadshahiInterior.jpg'), thumbnailUrl:commonsFile('BadshahiInterior.jpg'), author:'Shabi Abdullah', license:'CC BY-SA 4.0', attribution:'Shabi Abdullah / Wikimedia Commons', sourceUrl:'https://commons.wikimedia.org/wiki/File:BadshahiInterior.jpg', verifiedRights:true },
   { id:'commons-desert', name:'Desert Landscape', kind:'image', url:commonsFile('Desert Landscape (54598484368).jpg'), thumbnailUrl:commonsFile('Desert Landscape (54598484368).jpg'), author:'Joshua Tree National Park', license:'Public Domain', attribution:'NPS / Wikimedia Commons', sourceUrl:'https://commons.wikimedia.org/wiki/File:Desert_Landscape_(54598484368).jpg', verifiedRights:true },
