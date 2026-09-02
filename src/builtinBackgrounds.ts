@@ -10,6 +10,7 @@ const LOCAL_BACKGROUND_SOURCES: BackgroundMedia[] = [
   { id:'local-background-2', name:'Background 2', kind:'image', url:'/backgrounds/Backgrounds (1).jpg', thumbnailUrl:'/backgrounds/Backgrounds (1).jpg', author:'Waraq media library', license:'User-provided', attribution:'Waraq media library', sourceUrl:'/backgrounds/Backgrounds (1).jpg', verifiedRights:false },
   { id:'local-background-3', name:'Background 3', kind:'image', url:'/backgrounds/Backgrounds (2).jpg', thumbnailUrl:'/backgrounds/Backgrounds (2).jpg', author:'Waraq media library', license:'User-provided', attribution:'Waraq media library', sourceUrl:'/backgrounds/Backgrounds (2).jpg', verifiedRights:false },
   { id:'local-background-4', name:'Background 4', kind:'image', url:'/backgrounds/Backgrounds (3).jpg', thumbnailUrl:'/backgrounds/Backgrounds (3).jpg', author:'Waraq media library', license:'User-provided', attribution:'Waraq media library', sourceUrl:'/backgrounds/Backgrounds (3).jpg', verifiedRights:false },
+  { id:'local-background-5', name:'Background 5', kind:'image', url:'/backgrounds/Backgrounds (4).avif', thumbnailUrl:'/backgrounds/Backgrounds (4).avif', author:'Waraq media library', license:'User-provided', attribution:'Waraq media library', sourceUrl:'/backgrounds/Backgrounds (4).avif', verifiedRights:false },
 ]
 
 export const BUILTIN_BACKGROUND_SOURCES: BackgroundMedia[] = [
