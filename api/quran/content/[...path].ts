@@ -26,7 +26,7 @@ async function requestQf(path: string, query: string, token: string, clientId: s
   })
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export async function GET(req: Request): Promise<Response> {
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
