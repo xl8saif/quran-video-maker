@@ -47,6 +47,16 @@ function getAudioGraph(audio: HTMLMediaElement): AudioGraph | null {
   return graph
 }
 
+function captureAudioTracks(audio: HTMLMediaElement): { stream: MediaStream | null; tracks: MediaStreamTrack[] } {
+  const capturable = audio as CapturableMediaElement
+  try {
+    const captured = capturable.captureStream?.() ?? null
+    return { stream: captured, tracks: captured?.getAudioTracks() ?? [] }
+  } catch {
+    return { stream: null, tracks: [] }
+  }
+}
+
 export function createCanvasAudioStream(canvas: HTMLCanvasElement, audio: HTMLMediaElement | null, frameRate = 30): MediaStream {
   return createCanvasAudioStreamController(canvas, audio, frameRate).stream
 }
@@ -56,20 +66,17 @@ export function createCanvasAudioStreamController(canvas: HTMLCanvasElement, aud
   let capturedAudioStream: MediaStream | null = null
 
   if (audio) {
-    const graph = getAudioGraph(audio)
-    const graphTracks = graph?.destination.stream.getAudioTracks() ?? []
-
-    if (graphTracks.length) {
-      graphTracks.forEach(track => videoStream.addTrack(track.clone()))
+    // Prefer the browser's native media-element capture. This preserves the exact
+    // audio element being exported and is more reliable than routing a media
+    // element through a Web Audio graph in headless Chromium.
+    const nativeCapture = captureAudioTracks(audio)
+    if (nativeCapture.tracks.length) {
+      capturedAudioStream = nativeCapture.stream
+      nativeCapture.tracks.forEach(track => videoStream.addTrack(track.clone()))
     } else {
-      const capturable = audio as CapturableMediaElement
-      try {
-        capturedAudioStream = capturable.captureStream?.() ?? null
-      } catch {
-        capturedAudioStream = null
-      }
-      const capturedTracks = capturedAudioStream?.getAudioTracks() ?? []
-      capturedTracks.forEach(track => videoStream.addTrack(track.clone()))
+      const graph = getAudioGraph(audio)
+      const graphTracks = graph?.destination.stream.getAudioTracks() ?? []
+      graphTracks.forEach(track => videoStream.addTrack(track.clone()))
     }
   }
 
