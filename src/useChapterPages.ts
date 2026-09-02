@@ -1,61 +1,13 @@
 import React from 'react'
-import {
-  fetchChapterPagesLookup,
-  getChapterPageNumbers,
-  getFirstChapterPage,
-  type ChapterPagesLookup,
-} from './chapterPagesApi'
+import { fetchChapterPages, type PagesLookupResponse } from './mushafApi'
 import type { MushafStyleId } from './mushafStyles'
 
-const SUPPORTED_STYLES = new Set<MushafStyleId>([
-  'hafs-arabic-naskh',
-  'indo-pak-muhammadi',
-])
-
-export function useChapterPages(chapterNumber: number, style: MushafStyleId) {
-  const [lookup, setLookup] = React.useState<ChapterPagesLookup | null>(null)
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState('')
-
-  React.useEffect(() => {
-    let cancelled = false
-    setLookup(null)
-
-    if (!SUPPORTED_STYLES.has(style)) {
-      setLoading(false)
-      setError('This Mushaf style does not have a page-layout mapping yet.')
-      return () => { cancelled = true }
-    }
-
-    setLoading(true)
-    setError('')
-
-    fetchChapterPagesLookup(chapterNumber, style)
-      .then(result => {
-        if (cancelled) return
-        setLookup(result)
-      })
-      .catch(error => {
-        if (cancelled) return
-        setLookup(null)
-        setError(error instanceof Error ? error.message : 'Unable to load Surah page mapping.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => { cancelled = true }
-  }, [chapterNumber, style])
-
-  const pageNumbers = React.useMemo(
-    () => lookup ? getChapterPageNumbers(lookup) : [],
-    [lookup],
-  )
-
-  const firstPage = React.useMemo(
-    () => lookup ? getFirstChapterPage(lookup) : null,
-    [lookup],
-  )
-
-  return { lookup, pageNumbers, firstPage, loading, error }
+export function useChapterPages(chapterNumber:number, style:MushafStyleId){
+ const [lookup,setLookup]=React.useState<PagesLookupResponse|null>(null)
+ const [loading,setLoading]=React.useState(false)
+ const [error,setError]=React.useState('')
+ React.useEffect(()=>{let cancelled=false;setLoading(true);setError('');fetchChapterPages(chapterNumber,style).then(result=>{if(!cancelled)setLookup(result)}).catch(error=>{if(!cancelled){setLookup(null);setError(error instanceof Error?error.message:'Unable to load bundled Quran page mapping.')}}).finally(()=>{if(!cancelled)setLoading(false)});return()=>{cancelled=true}},[chapterNumber,style])
+ const pageNumbers=React.useMemo(()=>lookup?Object.keys(lookup.pages).map(Number).sort((a,b)=>a-b):[],[lookup])
+ const firstPage=pageNumbers[0]||null
+ return {lookup,pageNumbers,firstPage,loading,error}
 }
