@@ -5,6 +5,7 @@ import { createExportCompositor } from './exportCompositor'
 import { useTranslationResources } from './useTranslationResources'
 import type { TranslationLanguage } from './translationUiModel'
 import { LiveRecitationControls } from './LiveRecitationControls'
+import { cacheQuranPage, getCachedQuranPage, quranPageCacheKey } from './quranLocalCache'
 
 type ExportMedia = { url?: string; kind?: 'image' | 'video' | 'upload'; opacity?: number; fit?: 'cover' | 'contain' | 'fill'; x?: number; y?: number }
 type ExportLogo = { url?: string; opacity?: number; size?: number; x?: number; y?: number }
@@ -32,8 +33,36 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
 
   React.useEffect(() => {
     let cancelled = false
-    setLoading(true); setError('')
-    fetchPage(page, styleId, { accessToken, clientId }, translationIds).then(data => { if (!cancelled) { setVerses(data.verses || []); onStatus?.(`Live Mushaf page ${page} loaded`) } }).catch(e => { if (!cancelled) { setVerses([]); setError(e instanceof Error ? e.message : 'Unable to load Mushaf page'); onStatus?.('Live Mushaf unavailable') } }).finally(() => { if (!cancelled) setLoading(false) })
+    const key = quranPageCacheKey(page, styleId)
+    setError('')
+    setLoading(true)
+
+    void getCachedQuranPage(key).then(cached => {
+      if (cancelled || !cached?.length) return
+      setVerses(cached)
+      setLoading(false)
+      onStatus?.(`Cached Mushaf page ${page} loaded`)
+    })
+
+    fetchPage(page, styleId, { accessToken, clientId }, translationIds).then(data => {
+      if (cancelled) return
+      const nextVerses = data.verses || []
+      setVerses(nextVerses)
+      setError('')
+      setLoading(false)
+      void cacheQuranPage(key, nextVerses)
+      onStatus?.(`Mushaf page ${page} loaded`)
+    }).catch(e => {
+      if (cancelled) return
+      setLoading(false)
+      setVerses(current => {
+        if (current.length) return current
+        setError(e instanceof Error ? e.message : 'Unable to load Mushaf page')
+        return []
+      })
+      onStatus?.('Mushaf data unavailable; retrying from local cache')
+    })
+
     return () => { cancelled = true }
   }, [styleId, page, accessToken, clientId, translationIds, onStatus])
 
@@ -84,8 +113,8 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
 
   const exportCanvas = exportCanvasRef && <canvas ref={exportCanvasRef} width={1280} height={720} aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
 
-  if (loading || translationsLoading && translationLanguages.length > 0 && !verses.length) return <div className="live-mushaf-state">Loading verified Mushaf page {page}…{exportCanvas}</div>
-  if (error) return <div className="live-mushaf-state error"><strong>Live Mushaf not loaded</strong><span>{error}</span><small>The app could not retrieve this Mushaf page through its secure backend connection.</small>{exportCanvas}</div>
+  if (loading && !verses.length) return <div className="live-mushaf-state"><strong>Loading verified Mushaf page {page}</strong><small>Preparing Quran text from the secure source or local app cache…</small>{exportCanvas}</div>
+  if (error && !verses.length) return <div className="live-mushaf-state error"><strong>Mushaf page unavailable</strong><span>{error}</span><small>The app will use locally cached Quran pages when available.</small>{exportCanvas}</div>
   if (!lines.length) return <div className="live-mushaf-state">{searchQuery ? 'No matching verses on this page.' : 'No page data returned.'}{exportCanvas}</div>
   return <div className="quran-live-page" dir="rtl" translate="no" ref={pageRef}>
     <div className="live-page-number">{page}</div>
