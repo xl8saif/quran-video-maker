@@ -14,10 +14,9 @@ type ExternalTranslation = { key: string; language: TranslationLanguage; title: 
 type Props = { styleId: MushafStyleId; page: number; accessToken?: string; clientId?: string; chapterNumber?: number; activeVerse?: string; activeWordIndex?: number; highlight: string; showFinger?: boolean; autoScroll?: boolean; scrollSpeed?: number; onStatus?: (message: string) => void; exportCanvasRef?: React.RefObject<HTMLCanvasElement | null>; exportBackground?: ExportMedia; exportLogo?: ExportLogo; exportTranslations?: ExportTranslation[]; translationLanguages?: TranslationLanguage[]; externalTranslations?: ExternalTranslation[]; searchQuery?: string }
 
 function languageLabel(language: TranslationLanguage) { return language === 'en' ? 'English' : language === 'ur' ? 'Urdu' : 'Arabic' }
-
 const quranFont = (styleId: MushafStyleId) => styleId === 'indo-pak-muhammadi' ? 'Muhammadi Quran' : 'Amiri Quran'
 
-export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = '', chapterNumber, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [], translationLanguages = [], externalTranslations = [], searchQuery = '' }: Props) {
+function LiveMushafPreviewInner({ styleId, page, accessToken = '', clientId = '', chapterNumber, activeVerse, activeWordIndex = 0, highlight, showFinger = true, autoScroll = true, scrollSpeed = 50, onStatus, exportCanvasRef, exportBackground, exportLogo, exportTranslations = [], translationLanguages = [], externalTranslations = [], searchQuery = '' }: Props) {
   const [verses, setVerses] = React.useState<ApiVerse[]>([])
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -133,3 +132,30 @@ export function LiveMushafPreview({ styleId, page, accessToken = '', clientId = 
     {exportCanvas}
   </div>
 }
+
+function sameValue<T>(a: T | undefined, b: T | undefined) {
+  return Object.is(a, b) || JSON.stringify(a) === JSON.stringify(b)
+}
+
+const liveMushafPropsEqual = (previous: Props, next: Props) =>
+  previous.styleId === next.styleId &&
+  previous.page === next.page &&
+  previous.accessToken === next.accessToken &&
+  previous.clientId === next.clientId &&
+  previous.chapterNumber === next.chapterNumber &&
+  previous.activeVerse === next.activeVerse &&
+  previous.activeWordIndex === next.activeWordIndex &&
+  previous.highlight === next.highlight &&
+  previous.showFinger === next.showFinger &&
+  previous.autoScroll === next.autoScroll &&
+  previous.scrollSpeed === next.scrollSpeed &&
+  previous.exportCanvasRef === next.exportCanvasRef &&
+  previous.onStatus === next.onStatus &&
+  sameValue(previous.exportBackground, next.exportBackground) &&
+  sameValue(previous.exportLogo, next.exportLogo) &&
+  sameValue(previous.exportTranslations, next.exportTranslations) &&
+  sameValue(previous.translationLanguages, next.translationLanguages) &&
+  sameValue(previous.externalTranslations, next.externalTranslations) &&
+  previous.searchQuery === next.searchQuery
+
+export const LiveMushafPreview = React.memo(LiveMushafPreviewInner, liveMushafPropsEqual)
