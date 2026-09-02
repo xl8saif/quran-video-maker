@@ -1,5 +1,17 @@
 import { clearQfToken, getQfAccessToken, getQfApiBase, getQfConfig } from '../_auth'
 
+type VercelRequest = {
+  method?: string
+  url?: string
+  headers: Record<string, string | string[] | undefined>
+}
+
+type VercelResponse = {
+  status: (code: number) => VercelResponse
+  setHeader: (name: string, value: string) => VercelResponse
+  json: (body: unknown) => VercelResponse
+}
+
 const ALLOWED_PREFIXES = [
   'pages/lookup',
   'verses/by_page/',
@@ -26,25 +38,27 @@ async function requestQf(path: string, query: string, token: string, clientId: s
   })
 }
 
-export async function GET(req: Request): Promise<Response> {
+function getRequestUrl(req: VercelRequest) {
+  const host = typeof req.headers.host === 'string' ? req.headers.host : 'localhost'
+  return new URL(req.url ?? '/', `https://${host}`)
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json', Allow: 'GET' },
-    })
+    return res
+      .status(405)
+      .setHeader('Allow', 'GET')
+      .json({ error: 'Method not allowed' })
   }
 
   try {
-    const requestUrl = new URL(req.url)
+    const requestUrl = getRequestUrl(req)
     const marker = '/api/quran/content/'
     const markerIndex = requestUrl.pathname.indexOf(marker)
     const path = markerIndex >= 0 ? requestUrl.pathname.slice(markerIndex + marker.length) : ''
 
     if (!path || !isAllowed(path)) {
-      return new Response(JSON.stringify({ error: 'Quran Foundation endpoint is not allowed' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return res.status(404).json({ error: 'Quran Foundation endpoint is not allowed' })
     }
 
     const { clientId, env } = getQfConfig()
@@ -57,25 +71,15 @@ export async function GET(req: Request): Promise<Response> {
 
     if (!response.ok) {
       const status = response.status === 403 ? 502 : response.status
-      return new Response(JSON.stringify({ error: 'Quran Foundation content request failed' }), {
-        status,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return res.status(status).json({ error: 'Quran Foundation content request failed' })
     }
 
     const body = await response.text()
-    return new Response(body, {
-      status: 200,
-      headers: {
-        'Content-Type': response.headers.get('content-type') ?? 'application/json',
-        'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
-      },
-    })
+    res.setHeader('Content-Type', response.headers.get('content-type') ?? 'application/json')
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600')
+    return res.status(200).json(JSON.parse(body))
   } catch (error) {
     console.error('Quran Foundation content proxy failed:', error instanceof Error ? error.message : 'unknown error')
-    return new Response(JSON.stringify({ error: 'Unable to retrieve Quran Foundation content' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return res.status(500).json({ error: 'Unable to retrieve Quran Foundation content' })
   }
 }
