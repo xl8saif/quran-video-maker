@@ -101,7 +101,7 @@ test('Chromium can record a combined canvas video and Web Audio stream', async (
   expect(result.type).toContain('video/webm')
 })
 
-test('real app export produces a downloadable WebM from a loaded audio source', async ({ page }) => {
+test('real app export produces a downloadable WebM with audio and valid timing', async ({ page }) => {
   await page.goto('/')
 
   const audioDataUrl = await page.evaluate(() => {
@@ -157,20 +157,31 @@ test('real app export produces a downloadable WebM from a loaded audio source', 
     const blob = await response.blob()
     const video = document.createElement('video')
     video.preload = 'metadata'
+    video.muted = true
+    video.playsInline = true
     const objectUrl = URL.createObjectURL(blob)
+    video.src = objectUrl
     const metadata = await new Promise<{ duration: number; width: number; height: number }>((resolve, reject) => {
       video.onloadedmetadata = () => resolve({ duration: video.duration, width: video.videoWidth, height: video.videoHeight })
       video.onerror = () => reject(new Error('Exported WebM could not be decoded by Chromium'))
-      video.src = objectUrl
     })
+    await video.play()
+    const stream = video.captureStream()
+    await new Promise(resolve => window.setTimeout(resolve, 100))
+    const tracks = { video: stream.getVideoTracks().length, audio: stream.getAudioTracks().length }
+    stream.getTracks().forEach(track => track.stop())
+    video.pause()
     video.remove()
     URL.revokeObjectURL(objectUrl)
-    return { size: blob.size, type: blob.type, ...metadata }
+    return { size: blob.size, type: blob.type, ...metadata, ...tracks }
   }, href)
 
   expect(exported.size).toBeGreaterThan(1000)
   expect(exported.type).toContain('video/webm')
-  expect(exported.duration).toBeGreaterThan(0)
+  expect(exported.duration).toBeGreaterThan(0.5)
+  expect(exported.duration).toBeLessThan(2)
   expect(exported.width).toBeGreaterThan(0)
   expect(exported.height).toBeGreaterThan(0)
+  expect(exported.video).toBeGreaterThan(0)
+  expect(exported.audio).toBeGreaterThan(0)
 })
