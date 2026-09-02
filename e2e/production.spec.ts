@@ -11,7 +11,7 @@ test('production app loads the current Waraq Quran Reel Maker UI', async ({ page
 
 test('Surah, language and translation-library controls are interactive', async ({ page }) => {
   await page.goto('/')
-  const surah = page.locator('select').filter({ has: page.locator('option') }).first()
+  const surah = page.locator('select').nth(1)
   await expect(surah).toBeVisible()
   await expect(surah.locator('option')).toHaveCount(114, { timeout: 30000 })
   await surah.selectOption('2')
