@@ -1,0 +1,6 @@
+/* Production runtime guard: keep language controls in an isolated, clickable stacking context. */
+.topbar{position:relative;z-index:1000;isolation:isolate}
+.title-block{position:relative;z-index:1001}
+.language-switcher{position:relative;z-index:1002;display:flex;pointer-events:auto}
+.language-switcher button{position:relative;z-index:1003;pointer-events:auto;touch-action:manipulation}
+.topbar:before,.topbar:after{z-index:0;pointer-events:none}
