@@ -29,7 +29,7 @@ function drawFit(ctx: CanvasRenderingContext2D, source: CanvasImageSource & { wi
   ctx.drawImage(source, (width - sw) * x / 100, (height - sh) * y / 100, sw, sh)
 }
 
-function isRtlLanguage(language: string) {
+export function isRtlLanguage(language: string) {
   return /^(ar|ur|fa|ps|ku)([-_]|$)/i.test(language.trim())
 }
 
