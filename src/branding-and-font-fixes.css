@@ -1,0 +1,13 @@
+.topbar{padding-left:84px!important;padding-right:84px!important}
+.topbar:before,.topbar:after{display:none!important}
+.brand-logo.glass-logo{width:56px!important;height:56px!important;min-width:56px!important;border-radius:50%!important;background:#fff!important;border:1px solid rgba(255,255,255,.9)!important;box-shadow:0 5px 18px rgba(0,0,0,.35)!important;display:grid!important;place-items:center!important;overflow:hidden!important}
+.brand-logo.glass-logo img{width:82%!important;height:82%!important;object-fit:contain!important;display:block!important}
+.media-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important}
+.media-card{min-height:92px!important;padding:5px!important;border:1px solid #2b3641!important;border-radius:8px!important;background:#141b23!important;color:#dce1e5!important;cursor:pointer!important;overflow:hidden!important;display:flex!important;align-items:flex-end!important;justify-content:center!important;position:relative!important}
+.media-card img,.media-card video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;opacity:.82!important}
+.media-card span{position:relative!important;z-index:2!important;background:#111a22dd!important;border-radius:4px!important;padding:4px 5px!important;font-size:8px!important}
+.media-card.selected{border-color:#b4975a!important;box-shadow:0 0 0 1px #b4975a!important}
+.quran-live-page,.quran-page,.live-mushaf-state{font-family:'Amiri Quran','Amiri',serif!important}
+.live-translation-ur,.translation.urdu{font-family:'Noto Nastaliq Urdu','Noto Naskh Arabic',serif!important}
+.live-translation-ar,.translation.arabic-translation{font-family:'Amiri Quran','Amiri',serif!important}
+@media(max-width:700px){.topbar{padding-left:68px!important;padding-right:68px!important}.brand-logo.glass-logo{width:44px!important;height:44px!important;min-width:44px!important}}
