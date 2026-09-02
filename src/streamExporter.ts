@@ -53,21 +53,23 @@ export function createCanvasAudioStream(canvas: HTMLCanvasElement, audio: HTMLMe
 
 export function createCanvasAudioStreamController(canvas: HTMLCanvasElement, audio: HTMLMediaElement | null, frameRate = 30): CanvasAudioStream {
   const videoStream = canvas.captureStream(frameRate)
-  let audioStream: MediaStream | null = null
+  let capturedAudioStream: MediaStream | null = null
 
   if (audio) {
-    const capturable = audio as CapturableMediaElement
-    try {
-      audioStream = capturable.captureStream?.() ?? null
-    } catch {
-      audioStream = null
-    }
+    const graph = getAudioGraph(audio)
+    const graphTracks = graph?.destination.stream.getAudioTracks() ?? []
 
-    if (audioStream) {
-      audioStream.getAudioTracks().forEach(track => videoStream.addTrack(track.clone()))
+    if (graphTracks.length) {
+      graphTracks.forEach(track => videoStream.addTrack(track.clone()))
     } else {
-      const graph = getAudioGraph(audio)
-      if (graph) graph.destination.stream.getAudioTracks().forEach(track => videoStream.addTrack(track.clone()))
+      const capturable = audio as CapturableMediaElement
+      try {
+        capturedAudioStream = capturable.captureStream?.() ?? null
+      } catch {
+        capturedAudioStream = null
+      }
+      const capturedTracks = capturedAudioStream?.getAudioTracks() ?? []
+      capturedTracks.forEach(track => videoStream.addTrack(track.clone()))
     }
   }
 
@@ -75,7 +77,7 @@ export function createCanvasAudioStreamController(canvas: HTMLCanvasElement, aud
     stream: videoStream,
     dispose: () => {
       videoStream.getTracks().forEach(track => track.stop())
-      audioStream?.getTracks().forEach(track => track.stop())
+      capturedAudioStream?.getTracks().forEach(track => track.stop())
     },
   }
 }
