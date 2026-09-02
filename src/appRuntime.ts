@@ -11,17 +11,16 @@ const EXPORT_SPEED_OPTIONS=[['0.75','0.75×'],['1','1×'],['1.25','1.25×'],['1.
 function ensureExportSpeedControl(){
  const existing=document.getElementById('qvm-export-speed') as HTMLSelectElement|null
  if(existing)return existing
- const button=Array.from(document.querySelectorAll('button')).find(node=>node.textContent?.includes('Export video'))
- if(!button)return null
- const wrapper=document.createElement('label')
- wrapper.className='export-speed-control'
- wrapper.textContent='Playback speed '
  const select=document.createElement('select')
  select.id='qvm-export-speed'
  select.setAttribute('aria-label','Playback speed')
  EXPORT_SPEED_OPTIONS.forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.appendChild(option)})
+ const wrapper=document.createElement('label')
+ wrapper.className='export-speed-control'
+ wrapper.textContent='Playback speed '
  wrapper.appendChild(select)
- button.parentElement?.insertBefore(wrapper,button)
+ Object.assign(wrapper.style,{position:'fixed',right:'24px',bottom:'24px',zIndex:'50',display:'flex',alignItems:'center',gap:'8px',padding:'8px 10px',borderRadius:'10px',background:'rgba(255,255,255,.94)',boxShadow:'0 4px 18px rgba(0,0,0,.14)',fontSize:'13px'})
+ document.body.appendChild(wrapper)
  return select
 }
 
