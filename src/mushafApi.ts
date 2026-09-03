@@ -1,4 +1,5 @@
 export type MushafApiConfig = { accessToken?: string; clientId?: string }
+export type MushafApiStyle = 'hafs-arabic-naskh' | 'indo-pak-muhammadi' | 'king-fahd-uthmanic-hafs'
 export type ApiWord = { id?: number; position:number; verse_key:string; page_number:number; line_number:number; text_uthmani?:string; text_indopak?:string; text_qpc_hafs?:string; code_v2?:string; audio_url?:string }
 export type ApiTranslation = { resource_id?:number; text:string; language_name?:string; resource_name?:string }
 export type ApiVerse = { verse_key:string; verse_number:number; page_number:number; text_uthmani?:string; text_indopak?:string; text_qpc_hafs?:string; words?:ApiWord[]; translations?:ApiTranslation[] }
@@ -6,7 +7,7 @@ export type MushafPageBoundary = { from:string; to:string; first_verse_key:strin
 export type PagesLookupResponse = { lookup_range:{from:string;to:string}; pages:Record<string,MushafPageBoundary>; total_page:number }
 type PageStart = { page:number; sura:number; aya:number }
 
-export function getMushafId(style:'hafs-arabic-naskh'|'indo-pak-muhammadi'){ return style==='indo-pak-muhammadi'?6:4 }
+export function getMushafId(style:MushafApiStyle){ return style==='indo-pak-muhammadi'?6:4 }
 
 const QURAN_FILES={uthmani:'/data/quran-uthmani-min.txt',simple:'/data/quran-simple-clean.txt'} as const
 const PAGE_MAP='/data/mushaf/page-map.json'
@@ -30,7 +31,7 @@ async function loadPageMap(){
  return data.map((item:PageStart)=>({page:Number(item.page),sura:Number(item.sura),aya:Number(item.aya)})).sort((a,b)=>a.page-b.page)
 }
 
-function getQuran(style:'hafs-arabic-naskh'|'indo-pak-muhammadi'){if(style==='indo-pak-muhammadi'){simplePromise ||= loadQuran(QURAN_FILES.simple);return simplePromise}uthmaniPromise ||= loadQuran(QURAN_FILES.uthmani);return uthmaniPromise}
+function getQuran(style:MushafApiStyle){if(style==='indo-pak-muhammadi'){simplePromise ||= loadQuran(QURAN_FILES.simple);return simplePromise}uthmaniPromise ||= loadQuran(QURAN_FILES.uthmani);return uthmaniPromise}
 function getPageMap(){pageMapPromise ||= loadPageMap();return pageMapPromise}
 function key(sura:number,aya:number){return `${sura}:${aya}`}
 function compareKey(a:{sura:number;aya:number},b:{sura:number;aya:number}){return a.sura-b.sura || a.aya-b.aya}
@@ -43,7 +44,7 @@ function orderedVerses(quran:Map<number,string[]>){
 
 function makeWords(text:string,verseKey:string,pageNumber:number,lineNumber:number,indopak=false):ApiWord[]{return text.split(/\s+/).filter(Boolean).map((word,index)=>({id:index+1,position:index+1,verse_key:verseKey,page_number:pageNumber,line_number:lineNumber,text_uthmani:indopak?undefined:word,text_qpc_hafs:indopak?undefined:word,text_indopak:indopak?word:undefined}))}
 
-export async function fetchChapterPages(chapterNumber:number,style:'hafs-arabic-naskh'|'indo-pak-muhammadi',_config?:MushafApiConfig):Promise<PagesLookupResponse>{
+export async function fetchChapterPages(chapterNumber:number,style:MushafApiStyle,_config?:MushafApiConfig):Promise<PagesLookupResponse>{
  const [quran,pageMap]=await Promise.all([getQuran(style),getPageMap()])
  const verses=quran.get(chapterNumber)||[];const ayahs=verses.slice(1).filter(Boolean).length
  if(!ayahs) throw new Error(`Bundled Quran surah ${chapterNumber} unavailable`)
@@ -66,7 +67,7 @@ export async function fetchChapterPages(chapterNumber:number,style:'hafs-arabic-
  return {lookup_range:{from:firstKey,to:lastKey},pages,total_page:Object.keys(pages).length}
 }
 
-export async function fetchPage(pageNumber:number,style:'hafs-arabic-naskh'|'indo-pak-muhammadi',_config?:MushafApiConfig,_translationIds:number[]=[]):Promise<{verses:ApiVerse[]}>
+export async function fetchPage(pageNumber:number,style:MushafApiStyle,_config?:MushafApiConfig,_translationIds:number[]=[]):Promise<{verses:ApiVerse[]}>
 {
  const [quran,pageMap]=await Promise.all([getQuran(style),getPageMap()])
  const page=Math.min(604,Math.max(1,Math.floor(pageNumber)))
