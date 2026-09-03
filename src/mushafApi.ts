@@ -9,7 +9,7 @@ type PageStart = { page:number; sura:number; aya:number }
 
 export function getMushafId(style:MushafApiStyle){ return style==='indo-pak-muhammadi'?6:4 }
 
-const QURAN_FILES={uthmani:'/data/quran-uthmani-min.txt',simple:'/data/quran-simple-clean.txt'} as const
+const QURAN_FILES={uthmani:'/data/quran/arabic/quran-uthmani-min.txt',simple:'/data/quran/arabic/quran-simple-clean.txt'} as const
 const PAGE_MAP='/data/mushaf/page-map.json'
 let uthmaniPromise:Promise<Map<number,string[]>>|null=null
 let simplePromise:Promise<Map<number,string[]>>|null=null
@@ -34,7 +34,6 @@ async function loadPageMap(){
 function getQuran(style:MushafApiStyle){if(style==='indo-pak-muhammadi'){simplePromise ||= loadQuran(QURAN_FILES.simple);return simplePromise}uthmaniPromise ||= loadQuran(QURAN_FILES.uthmani);return uthmaniPromise}
 function getPageMap(){pageMapPromise ||= loadPageMap();return pageMapPromise}
 function key(sura:number,aya:number){return `${sura}:${aya}`}
-function compareKey(a:{sura:number;aya:number},b:{sura:number;aya:number}){return a.sura-b.sura || a.aya-b.aya}
 
 function orderedVerses(quran:Map<number,string[]>){
  const result:{sura:number;aya:number;text:string;verseKey:string}[]=[]
