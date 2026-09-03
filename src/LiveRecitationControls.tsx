@@ -84,7 +84,7 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
       <button className="primary" type="button" onClick={togglePlayback} disabled={!audio || loadingAudio} aria-label={playing ? 'Pause recitation' : 'Play recitation'}>{playing ? <Pause size={15}/> : <Play size={15}/>} {playing ? 'Pause' : 'Play'}</button>
       <select value={reciterId} disabled={loadingReciters || loadingAudio || !reciters.length} onChange={event => setReciterId(Number(event.target.value))} aria-label="Reciter">
         {!reciters.length && <option value="">{loadingReciters ? 'Loading reciters…' : 'No reciters available'}</option>}
-        {reciters.map(reciter => <option key={reciter.id} value={reciter.id}>{reciter.reciter_name || reciter.name || `Reciter ${reciter.id}`}{reciter.style ? ` · ${reciter.style}` : ''}</option>)}
+        {reciters.map(reciter => <option key={reciter.id} value={reciter.id}>{reciter.reciter_name || reciter.name || `Reciter ${reciter.id}`}{reciter.arabic_name ? ` — ${reciter.arabic_name}` : ''}{reciter.style ? ` · ${reciter.style}` : ''}</option>)}
       </select>
       <select value={speed} onChange={event => setSpeed(Number(event.target.value))} aria-label="Playback speed">{SPEEDS.map(value => <option key={value} value={value}>{value}×</option>)}</select>
     </div>
