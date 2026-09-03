@@ -1,6 +1,6 @@
 import type { AppRuntime } from './appRuntime'
 import type { MushafStyleId } from './mushafStyles'
-import { PLATFORM_PRESETS, type PlatformPresetId } from './platformPresets'
+import { PLATFORM_PRESETS } from './platformPresets'
 
 export type ExportPlaybackSpeed = 0.75 | 1 | 1.25 | 1.5 | 2
 export type ExportResolution = '720p' | '1080p' | '1440p' | '2160p' | 'youtube-landscape' | 'youtube-shorts' | 'square'
