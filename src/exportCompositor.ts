@@ -19,9 +19,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   if (cached) return Promise.resolve(cached)
   return new Promise((resolve, reject) => {
     const image = new Image()
-    if (isRemoteHttpUrl(url) && new URL(url, window.location.href).origin !== window.location.origin) {
-      image.crossOrigin = 'anonymous'
-    }
+    if (isRemoteHttpUrl(url) && new URL(url, window.location.href).origin !== window.location.origin) image.crossOrigin = 'anonymous'
     image.onload = () => { imageCache.set(url, image); resolve(image) }
     image.onerror = () => reject(new Error(`Unable to load image: ${url}`))
     image.src = url
@@ -51,19 +49,24 @@ export function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: 
   const words = text.trim().split(/\s+/).filter(Boolean)
   const lines: string[] = []
   let line = ''
-
   for (const word of words) {
     const candidate = line ? `${line} ${word}` : word
-    if (!line || ctx.measureText(candidate).width <= maxWidth) {
-      line = candidate
-      continue
-    }
-    lines.push(line)
-    line = word
+    if (!line || ctx.measureText(candidate).width <= maxWidth) line = candidate
+    else { lines.push(line); line = word }
   }
-
   if (line) lines.push(line)
   return lines
+}
+
+function safeAreaForCanvas(width: number, height: number) {
+  const ratio = width / Math.max(1, height)
+  if (ratio < 0.8) return { top: 0.12, right: 0.06, bottom: 0.16, left: 0.06 }
+  if (ratio < 1.2) return { top: 0.08, right: 0.06, bottom: 0.08, left: 0.06 }
+  return { top: 0.06, right: 0.04, bottom: 0.06, left: 0.04 }
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
 }
 
 export async function createExportCompositor(options: ExportCompositorOptions) {
@@ -75,36 +78,49 @@ export async function createExportCompositor(options: ExportCompositorOptions) {
   if (options.background?.url) {
     if (options.background.kind === 'video') {
       backgroundVideo = document.createElement('video')
-      if (isRemoteHttpUrl(options.background.url) && new URL(options.background.url, window.location.href).origin !== window.location.origin) {
-        backgroundVideo.crossOrigin = 'anonymous'
-      }
+      if (isRemoteHttpUrl(options.background.url) && new URL(options.background.url, window.location.href).origin !== window.location.origin) backgroundVideo.crossOrigin = 'anonymous'
       backgroundVideo.src = options.background.url
       backgroundVideo.muted = true
       backgroundVideo.loop = true
       backgroundVideo.playsInline = true
       backgroundVideo.preload = 'auto'
       void backgroundVideo.play().catch(() => undefined)
-    } else {
-      backgroundImage = await loadImage(options.background.url).catch(() => null)
-    }
+    } else backgroundImage = await loadImage(options.background.url).catch(() => null)
   }
 
   const draw = () => {
     const ctx = canvas.getContext('2d'); if (!ctx) return
     const width = canvas.width || options.width
     const height = canvas.height || options.height
+    const safe = safeAreaForCanvas(width, height)
+    const safeLeft = width * safe.left
+    const safeTop = height * safe.top
+    const safeWidth = width * (1 - safe.left - safe.right)
+    const safeHeight = height * (1 - safe.top - safe.bottom)
+
     ctx.clearRect(0, 0, width, height)
     ctx.fillStyle = '#f7f1e4'; ctx.fillRect(0, 0, width, height)
     const background = options.background
     if (backgroundImage && background) { ctx.globalAlpha = background.opacity ?? 0.35; drawFit(ctx, backgroundImage, width, height, background.fit || 'cover', background.x ?? 50, background.y ?? 50); ctx.globalAlpha = 1 }
     else if (backgroundVideo && background && backgroundVideo.readyState >= 2) { ctx.globalAlpha = background.opacity ?? 0.35; drawFit(ctx, backgroundVideo, width, height, background.fit || 'cover', background.x ?? 50, background.y ?? 50); ctx.globalAlpha = 1 }
+
+    // Render the Quran composition inside the platform-safe rectangle so
+    // vertical feeds leave room for UI overlays and landscape platforms
+    // preserve a comfortable margin for controls and captions.
+    ctx.save()
+    const mushafScale = Math.min(safeWidth / width, safeHeight / height)
+    const mushafWidth = width * mushafScale
+    const mushafHeight = height * mushafScale
+    ctx.translate(safeLeft + (safeWidth - mushafWidth) / 2, safeTop + (safeHeight - mushafHeight) / 2)
+    ctx.scale(mushafScale, mushafScale)
     options.drawMushaf(ctx, width, height)
+    ctx.restore()
 
     if (options.translations?.length) {
-      const blockWidth = width * 0.9
-      const baseSize = Math.max(20, Math.min(36, width / 55))
-      const labelSize = Math.max(14, Math.min(22, width / 85))
-      const bottom = height - 58
+      const blockWidth = safeWidth * 0.9
+      const baseSize = Math.max(20, Math.min(36, safeWidth / 55))
+      const labelSize = Math.max(14, Math.min(22, safeWidth / 85))
+      const bottom = safeTop + safeHeight - Math.max(24, height * 0.025)
       const gap = Math.max(14, height / 180)
       let cursorY = bottom
 
@@ -116,14 +132,15 @@ export async function createExportCompositor(options: ExportCompositorOptions) {
         ctx.textAlign = 'center'
         ctx.fillStyle = '#40372b'
         ctx.font = `600 ${labelSize}px system-ui, sans-serif`
-        ctx.fillText(translation.language.toUpperCase(), width / 2, cursorY)
+        ctx.fillText(translation.language.toUpperCase(), safeLeft + safeWidth / 2, cursorY)
         cursorY -= labelSize + 8
 
         ctx.font = translationFont(translation.language, size)
         const lines = wrapText(ctx, translation.text, blockWidth)
         const lineHeight = size * 1.45
         for (let lineIndex = lines.length - 1; lineIndex >= 0; lineIndex -= 1) {
-          ctx.fillText(lines[lineIndex], width / 2, cursorY)
+          if (cursorY < safeTop) break
+          ctx.fillText(lines[lineIndex], safeLeft + safeWidth / 2, cursorY)
           cursorY -= lineHeight
         }
         cursorY -= gap
@@ -134,12 +151,27 @@ export async function createExportCompositor(options: ExportCompositorOptions) {
       ctx.font = '10px sans-serif'
     }
 
-    if (logo) { const size = width * ((options.logo?.size ?? 18) / 100); const x = width * ((options.logo?.x ?? 88) / 100); const y = height * ((options.logo?.y ?? 90) / 100); ctx.globalAlpha = (options.logo?.opacity ?? 100) / 100; ctx.drawImage(logo, x - size / 2, y - size / 2, size, size); ctx.globalAlpha = 1 }
+    if (logo) {
+      const size = Math.min(width, height) * ((options.logo?.size ?? 18) / 100)
+      const requestedX = safeLeft + safeWidth * ((options.logo?.x ?? 88) / 100)
+      const requestedY = safeTop + safeHeight * ((options.logo?.y ?? 90) / 100)
+      const x = clamp(requestedX, safeLeft + size / 2, safeLeft + safeWidth - size / 2)
+      const y = clamp(requestedY, safeTop + size / 2, safeTop + safeHeight - size / 2)
+      ctx.globalAlpha = (options.logo?.opacity ?? 100) / 100
+      ctx.drawImage(logo, x - size / 2, y - size / 2, size, size)
+      ctx.globalAlpha = 1
+    }
   }
 
   let animationFrame = 0
   const animate = () => { draw(); animationFrame = window.requestAnimationFrame(animate) }
   animate()
 
-  return { draw, destroy: () => { window.cancelAnimationFrame(animationFrame); if (backgroundVideo) { backgroundVideo.pause(); backgroundVideo.removeAttribute('src'); backgroundVideo.load() } } }
+  return {
+    draw,
+    destroy: () => {
+      window.cancelAnimationFrame(animationFrame)
+      if (backgroundVideo) { backgroundVideo.pause(); backgroundVideo.removeAttribute('src'); backgroundVideo.load() }
+    },
+  }
 }
