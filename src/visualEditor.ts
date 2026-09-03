@@ -9,6 +9,9 @@ export type VisualEditorSettings = {
   logoY: number
   logoSize: number
   logoOpacity: number
+  backgroundX: number
+  backgroundY: number
+  backgroundZoom: number
   backgroundBlur: number
   backgroundDim: number
   gradientOverlay: boolean
@@ -27,6 +30,9 @@ export const DEFAULT_VISUAL_EDITOR_SETTINGS: VisualEditorSettings = {
   logoY: 90,
   logoSize: 12,
   logoOpacity: 100,
+  backgroundX: 50,
+  backgroundY: 50,
+  backgroundZoom: 100,
   backgroundBlur: 0,
   backgroundDim: 0,
   gradientOverlay: true,
@@ -110,14 +116,14 @@ function mountPanel() {
   section('Quran'); createRange(panel, 'Horizontal', 'quranX', 20, 80); createRange(panel, 'Vertical', 'quranY', 15, 70); createRange(panel, 'Scale', 'quranScale', 70, 130)
   section('Translation'); createRange(panel, 'Horizontal', 'translationX', 15, 85); createRange(panel, 'Vertical', 'translationY', 55, 92); createRange(panel, 'Scale', 'translationScale', 70, 130)
   section('Logo'); createRange(panel, 'Horizontal', 'logoX', 0, 100); createRange(panel, 'Vertical', 'logoY', 0, 100); createRange(panel, 'Size', 'logoSize', 4, 30); createRange(panel, 'Opacity', 'logoOpacity', 0, 100)
-  section('Background'); createRange(panel, 'Blur', 'backgroundBlur', 0, 20); createRange(panel, 'Dim', 'backgroundDim', 0, 70); createRange(panel, 'Gradient', 'gradientStrength', 0, 70)
+  section('Background'); createRange(panel, 'Horizontal', 'backgroundX', 0, 100); createRange(panel, 'Vertical', 'backgroundY', 0, 100); createRange(panel, 'Zoom', 'backgroundZoom', 80, 150); createRange(panel, 'Blur', 'backgroundBlur', 0, 20); createRange(panel, 'Dim', 'backgroundDim', 0, 70); createRange(panel, 'Gradient', 'gradientStrength', 0, 70)
 
   const checks = document.createElement('div'); checks.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;color:#e5e7eb;font-size:12px'
   const gradient = document.createElement('label'); const gradientInput = document.createElement('input'); gradientInput.type = 'checkbox'; gradientInput.checked = settings.gradientOverlay; gradientInput.onchange = () => setVisualEditorSettings({ gradientOverlay: gradientInput.checked }); gradient.append(gradientInput, document.createTextNode('Gradient'))
   const safe = document.createElement('label'); const safeInput = document.createElement('input'); safeInput.type = 'checkbox'; safeInput.checked = settings.showSafeAreas; safeInput.onchange = () => setVisualEditorSettings({ showSafeAreas: safeInput.checked }); safe.append(safeInput, document.createTextNode('Safe areas'))
   checks.append(gradient, safe); panel.append(checks)
 
-  const reset = document.createElement('button'); reset.textContent = 'Reset layout'; reset.type = 'button'; reset.style.cssText = 'width:100%;border:1px solid #4b5563;background:#1f2937;color:#f5f1e8;border-radius:6px;padding:8px;cursor:pointer'; reset.onclick = () => window.location.reload(); panel.append(reset)
+  const reset = document.createElement('button'); reset.textContent = 'Reset layout'; reset.type = 'button'; reset.style.cssText = 'width:100%;border:1px solid #4b5563;background:#1f2937;color:#f5f1e8;border-radius:6px;padding:8px;cursor:pointer'; reset.onclick = () => { resetVisualEditorSettings(); window.location.reload() }; panel.append(reset)
   document.body.append(panel)
 }
 
