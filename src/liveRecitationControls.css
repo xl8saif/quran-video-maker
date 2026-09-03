@@ -13,14 +13,54 @@
   gap: 8px;
 }
 
+.live-recitation-controls .recitation-row button.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(127, 104, 62, 0.55);
+  border-radius: 7px;
+  background: #6f5a35;
+  color: #fffdf7;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(48, 38, 22, 0.12);
+}
+
+.live-recitation-controls .recitation-row button.primary:hover:not(:disabled) {
+  background: #5e4b2d;
+}
+
+.live-recitation-controls .recitation-row button.primary:focus-visible,
+.live-recitation-controls select:focus-visible,
+.live-recitation-controls input[type="range"]:focus-visible {
+  outline: 2px solid #8a7144;
+  outline-offset: 2px;
+}
+
+.live-recitation-controls .recitation-row button.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .live-recitation-controls select {
   min-width: 0;
   flex: 1;
   height: 34px;
-  border: 1px solid rgba(90, 74, 45, 0.25);
+  border: 1px solid rgba(90, 74, 45, 0.32);
   border-radius: 7px;
   padding: 0 8px;
-  background: #fff;
+  background: #fffdf8;
+  color: #2f2a22;
+  font-weight: 600;
+  color-scheme: light;
+}
+
+.live-recitation-controls select option {
+  background: #fffdf8;
+  color: #2f2a22;
 }
 
 .live-recitation-controls select:last-child {
@@ -31,11 +71,13 @@
   display: block;
   width: 100%;
   margin: 9px 0 4px;
+  accent-color: #6f5a35;
 }
 
 .live-recitation-controls .hint {
   display: block;
   min-height: 16px;
+  color: #625945;
 }
 
 @media (max-width: 640px) {
