@@ -117,11 +117,13 @@ function LiveMushafPreviewInner({ styleId, page, accessToken = '', clientId = ''
 
   const translationRows = React.useMemo(() => verses.map(verse => ({ verse, translations: (verse.translations || []).map(item => { const language = translationLanguages.find(candidate => getId(candidate) === item.resource_id); return language ? { ...item, language } : null }).filter((item): item is NonNullable<typeof item> => Boolean(item)) })).filter(row => row.translations.length), [verses, translationLanguages, getId])
   const exportCanvas = exportCanvasRef && <canvas ref={exportCanvasRef} width={1280} height={720} aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
+  const liveBackground = exportBackground?.url ? (exportBackground.kind === 'video' ? <video className="live-player-background" src={exportBackground.url} autoPlay muted loop playsInline preload="auto" aria-hidden="true" /> : <img className="live-player-background" src={exportBackground.url} alt="" aria-hidden="true" />) : null
 
   if (loading && !verses.length) return <div className="live-mushaf-state"><strong>Loading bundled Mushaf page {page}</strong><small>Preparing local Quran text and page data…</small>{exportCanvas}</div>
   if (error && !verses.length) return <div className="live-mushaf-state error"><strong>Mushaf page unavailable</strong><span>{error}</span><small>The app will use locally cached Quran pages when available.</small>{exportCanvas}</div>
   if (!lines.length) return <div className="live-mushaf-state">{searchQuery ? 'No matching verses on this page.' : 'No page data returned.'}{exportCanvas}</div>
   return <div className="quran-live-page" dir="rtl" translate="no" ref={pageRef}>
+    {liveBackground}
     <div className="live-page-number">{page}</div>
     {showFinger && <div className="live-finger" aria-hidden="true" style={fingerStyle}>☝</div>}
     <div dir="ltr" style={{ direction: 'ltr', marginBottom: 12 }}><LiveRecitationControls chapterNumber={resolvedChapterNumber} onSync={(verseKey, wordIndex) => { setLiveActiveVerse(verseKey); setLiveActiveWordIndex(wordIndex) }} onStatus={onStatus}/></div>
