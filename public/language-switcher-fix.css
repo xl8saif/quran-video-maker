@@ -4,3 +4,9 @@
 .language-switcher{position:relative;z-index:1002;display:flex;pointer-events:auto}
 .language-switcher button{position:relative;z-index:1003;pointer-events:auto;touch-action:manipulation}
 .topbar:before,.topbar:after{z-index:0;pointer-events:none}
+
+/* Keep Quran word spacing stable while live playback changes the active word. */
+.quran-live-page .live-quran-line{white-space:nowrap}
+.quran-live-page .live-quran-line span{white-space:pre;display:inline-block;margin-inline:0 .08em;box-sizing:border-box}
+.quran-live-page .live-quran-line span.active-live-word,
+.quran-live-page .live-quran-line span.active-live-word-soft{margin-inline:0 .08em}
