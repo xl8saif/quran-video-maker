@@ -9,13 +9,14 @@ export type QuranEncTranslation = {
 }
 
 const LOCAL_TRANSLATIONS: QuranEncTranslation[] = [
-  { key:'local_ur_jalandhry', language_iso_code:'ur', version:'bundled', last_update:'', title:'Fateh Muhammad Jalandhry', description:'Urdu translation bundled with Waraq', localPath:'/data/ur.jalandhry.txt' },
-  { key:'local_ur_junagarhi', language_iso_code:'ur', version:'bundled', last_update:'', title:'Muhammad Junagarhi', description:'Urdu translation bundled with Waraq', localPath:'/data/ur.junagarhi.txt' },
-  { key:'local_en_daryabadi', language_iso_code:'en', version:'bundled', last_update:'', title:'Abdul Majid Daryabadi', description:'English translation bundled with Waraq', localPath:'/data/en.daryabadi.txt' },
-  { key:'local_ar_muyassar', language_iso_code:'ar', version:'bundled', last_update:'', title:'At-Tafsir Al-Muyassar', description:'Arabic translation bundled with Waraq', localPath:'/data/ar.muyassar.txt' },
-  { key:'local_hi_farooq', language_iso_code:'hi', version:'bundled', last_update:'', title:'Muhammad Farooq Khan', description:'Hindi translation bundled with Waraq', localPath:'/data/hi.farooq.txt' },
-  { key:'local_ko_korean', language_iso_code:'ko', version:'bundled', last_update:'', title:'Korean translation', description:'Korean translation bundled with Waraq', localPath:'/data/ko.korean.txt' },
-  { key:'local_ta_tamil', language_iso_code:'ta', version:'bundled', last_update:'', title:'Tamil translation', description:'Tamil translation bundled with Waraq', localPath:'/data/ta.tamil.txt' },
+  { key:'local_ur_jalandhry', language_iso_code:'ur', version:'bundled', last_update:'', title:'Fateh Muhammad Jalandhry', description:'Urdu translation bundled with Waraq', localPath:'/data/quran/translations/ur.jalandhry.txt' },
+  { key:'local_ur_junagarhi', language_iso_code:'ur', version:'bundled', last_update:'', title:'Muhammad Junagarhi', description:'Urdu translation bundled with Waraq', localPath:'/data/quran/translations/ur.junagarhi.txt' },
+  { key:'local_en_daryabadi', language_iso_code:'en', version:'bundled', last_update:'', title:'Abdul Majid Daryabadi', description:'English translation bundled with Waraq', localPath:'/data/quran/translations/en.daryabadi.txt' },
+  { key:'local_ar_muyassar', language_iso_code:'ar', version:'bundled', last_update:'', title:'At-Tafsir Al-Muyassar', description:'Arabic translation bundled with Waraq', localPath:'/data/quran/translations/ar.muyassar.txt' },
+  { key:'local_hi_farooq', language_iso_code:'hi', version:'bundled', last_update:'', title:'Muhammad Farooq Khan', description:'Hindi translation bundled with Waraq', localPath:'/data/quran/translations/hi.farooq.txt' },
+  { key:'local_ko_korean', language_iso_code:'ko', version:'bundled', last_update:'', title:'Korean translation', description:'Korean translation bundled with Waraq', localPath:'/data/quran/translations/ko.korean.txt' },
+  { key:'local_ta_tamil', language_iso_code:'ta', version:'bundled', last_update:'', title:'Tamil translation', description:'Tamil translation bundled with Waraq', localPath:'/data/quran/translations/ta.tamil.txt' },
+  { key:'local_zh_jian', language_iso_code:'zh', version:'bundled', last_update:'', title:'Jian Chinese translation', description:'Chinese translation bundled with Waraq', localPath:'/data/quran/translations/zh.jian.txt' },
 ]
 
 async function getPreferredLanguage(): Promise<'ar' | 'ur' | 'en'> {
@@ -67,8 +68,6 @@ async function fetchLocalTranslation(source: QuranEncTranslation, surah: number)
   const result: QuranEncVerse[] = []
   const reader = response.body?.getReader()
 
-  // Stream the ordered translation file so selecting a surah does not block
-  // the main thread by splitting/parsing the entire multi-megabyte file at once.
   if (reader) {
     const decoder = new TextDecoder()
     let buffer = ''
