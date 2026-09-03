@@ -32,6 +32,9 @@ jobs:
       - name: Verify translations
         run: node scripts/verify-translations.mjs
 
+      - name: Inspect bundled recitation databases
+        run: python3 scripts/inspect-recitation-db.py
+
       - name: Unit tests
         run: npm test
 
