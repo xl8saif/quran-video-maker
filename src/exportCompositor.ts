@@ -1,3 +1,5 @@
+import { getVisualEditorSettings } from './visualEditor'
+
 export interface ExportCompositorOptions {
   canvas: HTMLCanvasElement
   width: number
@@ -97,32 +99,53 @@ export async function createExportCompositor(options: ExportCompositorOptions) {
     const safeTop = height * safe.top
     const safeWidth = width * (1 - safe.left - safe.right)
     const safeHeight = height * (1 - safe.top - safe.bottom)
+    const visual = getVisualEditorSettings()
 
     ctx.clearRect(0, 0, width, height)
     ctx.fillStyle = '#f7f1e4'; ctx.fillRect(0, 0, width, height)
-    const background = options.background
-    if (backgroundImage && background) { ctx.globalAlpha = background.opacity ?? 0.35; drawFit(ctx, backgroundImage, width, height, background.fit || 'cover', background.x ?? 50, background.y ?? 50); ctx.globalAlpha = 1 }
-    else if (backgroundVideo && background && backgroundVideo.readyState >= 2) { ctx.globalAlpha = background.opacity ?? 0.35; drawFit(ctx, backgroundVideo, width, height, background.fit || 'cover', background.x ?? 50, background.y ?? 50); ctx.globalAlpha = 1 }
 
-    // Render the Quran composition inside the platform-safe rectangle so
-    // vertical feeds leave room for UI overlays and landscape platforms
-    // preserve a comfortable margin for controls and captions.
+    const background = options.background
+    if (backgroundImage && background) {
+      ctx.save()
+      ctx.globalAlpha = (background.opacity ?? 0.35) * (1 - visual.backgroundDim / 100)
+      ctx.filter = visual.backgroundBlur > 0 ? `blur(${visual.backgroundBlur}px)` : 'none'
+      if (visual.backgroundZoom !== 100) {
+        const zoom = visual.backgroundZoom / 100
+        ctx.translate(width / 2, height / 2); ctx.scale(zoom, zoom); ctx.translate(-width / 2, -height / 2)
+      }
+      drawFit(ctx, backgroundImage, width, height, background.fit || 'cover', visual.backgroundX, visual.backgroundY)
+      ctx.restore()
+    } else if (backgroundVideo && background && backgroundVideo.readyState >= 2) {
+      ctx.save()
+      ctx.globalAlpha = (background.opacity ?? 0.35) * (1 - visual.backgroundDim / 100)
+      ctx.filter = visual.backgroundBlur > 0 ? `blur(${visual.backgroundBlur}px)` : 'none'
+      if (visual.backgroundZoom !== 100) {
+        const zoom = visual.backgroundZoom / 100
+        ctx.translate(width / 2, height / 2); ctx.scale(zoom, zoom); ctx.translate(-width / 2, -height / 2)
+      }
+      drawFit(ctx, backgroundVideo, width, height, background.fit || 'cover', visual.backgroundX, visual.backgroundY)
+      ctx.restore()
+    }
+
     ctx.save()
-    const mushafScale = Math.min(safeWidth / width, safeHeight / height)
-    const mushafWidth = width * mushafScale
-    const mushafHeight = height * mushafScale
-    ctx.translate(safeLeft + (safeWidth - mushafWidth) / 2, safeTop + (safeHeight - mushafHeight) / 2)
-    ctx.scale(mushafScale, mushafScale)
+    const baseMushafScale = Math.min(safeWidth / width, safeHeight / height)
+    const mushafWidth = width * baseMushafScale
+    const mushafHeight = height * baseMushafScale
+    const quranCenterX = safeLeft + safeWidth * (visual.quranX / 100)
+    const quranCenterY = safeTop + safeHeight * (visual.quranY / 100)
+    ctx.translate(quranCenterX, quranCenterY)
+    ctx.scale(baseMushafScale * (visual.quranScale / 100), baseMushafScale * (visual.quranScale / 100))
+    ctx.translate(-mushafWidth / 2 / baseMushafScale, -mushafHeight / 2 / baseMushafScale)
     options.drawMushaf(ctx, width, height)
     ctx.restore()
 
     if (options.translations?.length) {
-      const blockWidth = safeWidth * 0.9
-      const baseSize = Math.max(20, Math.min(36, safeWidth / 55))
-      const labelSize = Math.max(14, Math.min(22, safeWidth / 85))
-      const bottom = safeTop + safeHeight - Math.max(24, height * 0.025)
-      const gap = Math.max(14, height / 180)
-      let cursorY = bottom
+      const blockWidth = safeWidth * 0.9 * (visual.translationScale / 100)
+      const baseSize = Math.max(20, Math.min(36, safeWidth / 55)) * (visual.translationScale / 100)
+      const labelSize = Math.max(14, Math.min(22, safeWidth / 85)) * (visual.translationScale / 100)
+      const anchorX = safeLeft + safeWidth * (visual.translationX / 100)
+      let cursorY = safeTop + safeHeight * (visual.translationY / 100)
+      const gap = Math.max(14, height / 180) * (visual.translationScale / 100)
 
       for (let index = options.translations.length - 1; index >= 0; index -= 1) {
         const translation = options.translations[index]
@@ -132,7 +155,7 @@ export async function createExportCompositor(options: ExportCompositorOptions) {
         ctx.textAlign = 'center'
         ctx.fillStyle = '#40372b'
         ctx.font = `600 ${labelSize}px system-ui, sans-serif`
-        ctx.fillText(translation.language.toUpperCase(), safeLeft + safeWidth / 2, cursorY)
+        ctx.fillText(translation.language.toUpperCase(), anchorX, cursorY)
         cursorY -= labelSize + 8
 
         ctx.font = translationFont(translation.language, size)
@@ -140,24 +163,28 @@ export async function createExportCompositor(options: ExportCompositorOptions) {
         const lineHeight = size * 1.45
         for (let lineIndex = lines.length - 1; lineIndex >= 0; lineIndex -= 1) {
           if (cursorY < safeTop) break
-          ctx.fillText(lines[lineIndex], safeLeft + safeWidth / 2, cursorY)
+          ctx.fillText(lines[lineIndex], anchorX, cursorY)
           cursorY -= lineHeight
         }
         cursorY -= gap
       }
+      ctx.direction = 'ltr'; ctx.textAlign = 'start'; ctx.font = '10px sans-serif'
+    }
 
-      ctx.direction = 'ltr'
-      ctx.textAlign = 'start'
-      ctx.font = '10px sans-serif'
+    if (visual.gradientOverlay) {
+      const gradient = ctx.createLinearGradient(0, height, 0, height * 0.35)
+      gradient.addColorStop(0, `rgba(0,0,0,${visual.gradientStrength / 100})`)
+      gradient.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height)
     }
 
     if (logo) {
-      const size = Math.min(width, height) * ((options.logo?.size ?? 18) / 100)
-      const requestedX = safeLeft + safeWidth * ((options.logo?.x ?? 88) / 100)
-      const requestedY = safeTop + safeHeight * ((options.logo?.y ?? 90) / 100)
+      const size = Math.min(width, height) * (visual.logoSize / 100)
+      const requestedX = safeLeft + safeWidth * (visual.logoX / 100)
+      const requestedY = safeTop + safeHeight * (visual.logoY / 100)
       const x = clamp(requestedX, safeLeft + size / 2, safeLeft + safeWidth - size / 2)
       const y = clamp(requestedY, safeTop + size / 2, safeTop + safeHeight - size / 2)
-      ctx.globalAlpha = (options.logo?.opacity ?? 100) / 100
+      ctx.globalAlpha = visual.logoOpacity / 100
       ctx.drawImage(logo, x - size / 2, y - size / 2, size, size)
       ctx.globalAlpha = 1
     }
