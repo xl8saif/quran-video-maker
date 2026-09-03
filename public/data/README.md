@@ -1,39 +1,49 @@
-# Static Quran data
+# Bundled Quran data
 
-This directory is reserved for verified, licensed Quran/Mushaf datasets that may legally be redistributed with this GitHub Pages application.
+This directory is the organized local data layer for Waraq Quran Reels Maker.
 
-## Current policy
-
-Do not place an Indo-Pak/Muhammadi Quran font, page images, or text dataset here unless its redistribution permission is documented. Some IndoPak resources explicitly prohibit redistribution.
-
-The application therefore treats these files as optional assets and shows an unavailable-state when they are not present.
-
-## Planned layout
+## Layout
 
 ```text
 public/data/
-  mushaf/
-    hafs/
-      pages/1.json
-      pages/2.json
-      ...
-    indo-pak/
-      pages/1.json
-      pages/2.json
-      ...
-  translations/
-    en/
-      <licensed-resource>.json
-    ur/
-      <licensed-resource>.json
-    ar/
-      <licensed-resource>.json
+├── quran/
+│   ├── arabic/
+│   │   ├── quran-simple-clean.txt
+│   │   └── quran-uthmani-min.txt
+│   └── translations/
+│       ├── ar.muyassar.txt
+│       ├── en.daryabadi.txt
+│       ├── hi.farooq.txt
+│       ├── ko.korean.txt
+│       ├── ta.tamil.txt
+│       ├── ur.jalandhry.txt
+│       ├── ur.junagarhi.txt
+│       └── zh.jian.txt
+├── fonts/
+│   ├── Amiri_Quran.zip
+│   ├── Muhammadi Quran font.zip
+│   └── Noto_Nastaliq_Urdu.zip
+├── mushaf/
+│   ├── hafs/pages/
+│   └── indopak/
+│       ├── indopak-nastaleeq.db.zip
+│       ├── indopak.json.zip
+│       └── qudratullah-indopak-15-lines.db.zip
+├── recitations/
+│   ├── ayah/sudais/
+│   └── surah/
+└── metadata/
+    ├── quran-recitation-sources.json
+    └── QURAN_DATA_SOURCES.md
 ```
 
-Each Mushaf page JSON should conform to the `StaticQuranPage` / `StaticQuranWord` types in `src/staticDataProvider.ts`.
+## Rules
 
-## Tanzil attribution
+- Keep Arabic Quran text, translations, fonts, Mushaf data, recitations, and metadata in their respective directories.
+- Treat bundled files as immutable source assets; application code should reference these stable paths.
+- Document redistribution/licensing terms before adding or redistributing third-party assets.
+- Tanzil Quran text must remain verbatim and retain the required attribution/license notice.
 
-If Tanzil Quran text is used, it must be distributed verbatim with the required Tanzil copyright/license notice and attribution. Tanzil permits use in websites and applications under CC BY 3.0, provided the source is clearly indicated and a link to Tanzil is included. The Quran text must not be changed.
+## Validation
 
-Source: https://tanzil.net/docs/Text_License
+The translation validator checks all 8 bundled translation files for UTF-8 validity, duplicate records, empty entries, and the expected 6,236 ayahs across all 114 surahs.
