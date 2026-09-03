@@ -19,46 +19,53 @@ test('Surah, language and translation-library controls are interactive', async (
   await expect(surah.locator('option')).toHaveCount(114, { timeout: 30000 })
   await surah.selectOption('2')
   await expect(surah).toHaveValue('2')
-
-  // Selecting a surah starts local translation fetches. Wait for those
-  // requests and React updates to settle before testing language controls.
   await page.waitForLoadState('networkidle')
   await expect(page.getByText('Loading selected translations…', { exact: true })).toHaveCount(0, { timeout: 30000 })
   const app = page.locator('.app-shell')
   const quranTitle = page.getByTestId('quran-section-title')
-
   const urButton = page.getByRole('button', { name: 'Ur', exact: true })
   await expect(urButton).toBeVisible()
   await urButton.click()
   await expect(app).toHaveAttribute('data-ui-language', 'ur')
   await expect(quranTitle).toHaveText('قرآن')
   await expect(page.getByRole('button', { name: 'Ur', exact: true })).toHaveAttribute('aria-pressed', 'true')
-
   const arButton = page.getByRole('button', { name: 'Ar', exact: true })
   await expect(arButton).toBeVisible()
   await arButton.click()
   await expect(app).toHaveAttribute('data-ui-language', 'ar')
   await expect(quranTitle).toHaveText('القرآن')
   await expect(page.getByRole('button', { name: 'Ar', exact: true })).toHaveAttribute('aria-pressed', 'true')
-
   const enButton = page.getByRole('button', { name: 'En', exact: true })
   await expect(enButton).toBeVisible()
   await enButton.click()
   await expect(app).toHaveAttribute('data-ui-language', 'en')
   await expect(quranTitle).toHaveText('Quran')
-
   await page.getByRole('button', { name: 'Open translation library', exact: true }).click()
   await expect(page.getByText('Open translation sources', { exact: true })).toBeVisible()
 })
 
-test('background library and default logo controls are visible', async ({ page }) => {
+test('background library shows real image and video thumbnails', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByText('Background', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: /Masjid Interior/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /Desert Landscape/ })).toBeVisible()
+  const imageThumbnails = page.locator('.media-thumb img')
+  await expect(imageThumbnails).toHaveCount(5)
+  await expect.poll(async () => imageThumbnails.evaluateAll(images => images.filter(image => (image as HTMLImageElement).naturalWidth > 0).length)).toBeGreaterThan(0)
+  await expect(page.locator('.media-thumb video')).toHaveCount(5)
   await expect(page.getByRole('button', { name: 'Waraq logo', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'CloudTrans logo', exact: true })).toBeVisible()
   await expect(page.locator('.glass-logo')).toHaveCount(2)
+})
+
+test('recitation controls load a public chapter source without the old API failure', async ({ page }) => {
+  await page.goto('/')
+  const reciter = page.getByRole('combobox', { name: 'Reciter' })
+  await expect(reciter).toBeVisible({ timeout: 30000 })
+  await expect(reciter.locator('option')).toHaveCount(5)
+  await expect(page.getByText('Quran Foundation request failed', { exact: false })).toHaveCount(0)
+  const audio = page.locator('#qvm-export-audio')
+  await expect(audio).toHaveAttribute('src', /Quran-Audio-Chapters\/raw\/refs\/heads\/main\/Data\/1\/1\.mp3/)
 })
 
 test('export is initially available and does not start without user action', async ({ page }) => {
@@ -104,7 +111,6 @@ test('Chromium can record a combined canvas video and Web Audio stream', async (
     canvas.remove()
     return { audioTracks, size: blob.size, type: blob.type }
   })
-
   expect(result.audioTracks).toBeGreaterThan(0)
   expect(result.size).toBeGreaterThan(0)
   expect(result.type).toContain('video/webm')
