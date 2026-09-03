@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, dirname, resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
 import { inflateRawSync } from 'node:zlib'
 
 const root = resolve(process.cwd())
@@ -7,9 +7,9 @@ const outputDir = resolve(root, 'public/fonts')
 mkdirSync(outputDir, { recursive: true })
 
 const sources = [
-  { zip: 'public/data/Amiri_Quran.zip', output: 'amiri-quran.ttf', keywords: ['amiri', 'quran'] },
-  { zip: 'public/data/Muhammadi Quran font.zip', output: 'muhammadi-quran.ttf', keywords: ['muhammadi', 'quran'] },
-  { zip: 'public/data/Noto_Nastaliq_Urdu.zip', output: 'noto-nastaliq-urdu.ttf', keywords: ['noto', 'nastaliq', 'urdu'] },
+  { zip: 'public/data/fonts/Amiri_Quran.zip', output: 'amiri-quran.ttf', keywords: ['amiri', 'quran'] },
+  { zip: 'public/data/fonts/Muhammadi Quran font.zip', output: 'muhammadi-quran.ttf', keywords: ['muhammadi', 'quran'] },
+  { zip: 'public/data/fonts/Noto_Nastaliq_Urdu.zip', output: 'noto-nastaliq-urdu.ttf', keywords: ['noto', 'nastaliq', 'urdu'] },
 ]
 
 function readU16(buf, offset) { return buf.readUInt16LE(offset) }
