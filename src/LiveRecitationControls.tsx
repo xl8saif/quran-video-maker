@@ -36,24 +36,47 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
     }).catch(errorValue => { if (!cancelled) setError(errorValue instanceof Error ? errorValue.message : 'Unable to load reciters.') }).finally(() => { if (!cancelled) setLoadingReciters(false) })
     return () => { cancelled = true }
   }, [])
+
   React.useEffect(() => {
     if (!reciterId) return
     let cancelled = false
     setLoadingAudio(true); setError(''); setPlaying(false); setCurrentMs(0); audioRef.current?.pause()
     void fetchChapterAudio(reciterId, chapterNumber, undefined, true).then(result => {
       if (cancelled) return
+      if (!result.audioUrl) throw new Error('No recitation audio is available for this Surah.')
       setAudio(result)
-      if (audioRef.current) { audioRef.current.src = result.audioUrl; audioRef.current.playbackRate = speed; audioRef.current.dataset.qvmExportSpeed = String(speed); audioRef.current.load() }
-      statusRef.current?.('Quran Foundation recitation loaded')
-    }).catch(errorValue => { if (!cancelled) { setAudio(null); setError(errorValue instanceof Error ? errorValue.message : 'Unable to load recitation.'); statusRef.current?.('Quran Foundation recitation unavailable') } }).finally(() => { if (!cancelled) setLoadingAudio(false) })
+      if (audioRef.current) {
+        audioRef.current.src = result.audioUrl
+        audioRef.current.playbackRate = speed
+        audioRef.current.dataset.qvmExportSpeed = String(speed)
+        audioRef.current.load()
+      }
+      statusRef.current?.('Quran recitation loaded')
+    }).catch(errorValue => {
+      if (!cancelled) {
+        setAudio(null)
+        setError(errorValue instanceof Error ? errorValue.message : 'Unable to load recitation.')
+        statusRef.current?.('Quran recitation unavailable')
+      }
+    }).finally(() => { if (!cancelled) setLoadingAudio(false) })
     return () => { cancelled = true }
   }, [chapterNumber, reciterId])
+
   React.useEffect(() => { if (audioRef.current) { audioRef.current.playbackRate = speed; audioRef.current.dataset.qvmExportSpeed = String(speed) } }, [speed])
 
-  const handleTime = (timeMs: number) => { setCurrentMs(timeMs); if (!audio) return; const active = findActiveTiming(audio.timestamps, timeMs); onSync?.(active.verseKey, active.wordIndex, timeMs) }
+  const handleTime = (timeMs: number) => { setCurrentMs(timeMs); if (!audio) return; const active = findActiveTiming(audio.timestamps, timeMs); if (active.verseKey) onSync?.(active.verseKey, active.wordIndex, timeMs) }
   const durationMs = Math.max(audio?.timestamps.length ? timingDuration(audio.timestamps) : 0, audioRef.current?.duration ? audioRef.current.duration * 1000 : 0)
   const progress = durationMs > 0 ? Math.min(100, currentMs / durationMs * 100) : 0
-  const togglePlayback = () => { const element = audioRef.current; if (!element || !audio) return; if (element.paused) void element.play(); else element.pause() }
+  const togglePlayback = () => {
+    const element = audioRef.current
+    if (!element || !audio) return
+    if (element.paused) {
+      void element.play().catch(() => {
+        setError('Playback was blocked. Tap Play again to start the recitation.')
+        statusRef.current?.('Recitation playback blocked')
+      })
+    } else element.pause()
+  }
   const seek = (value: number) => { const element = audioRef.current; if (!element || !durationMs) return; element.currentTime = value / 100 * (durationMs / 1000); handleTime(element.currentTime * 1000) }
 
   return <div className="live-recitation-controls">
@@ -65,8 +88,8 @@ export function LiveRecitationControls({ chapterNumber, onSync, onStatus }: Prop
       </select>
       <select value={speed} onChange={event => setSpeed(Number(event.target.value))} aria-label="Playback speed">{SPEEDS.map(value => <option key={value} value={value}>{value}×</option>)}</select>
     </div>
-    <input aria-label="Recitation progress" type="range" min="0" max="100" step="0.1" value={progress} disabled={!audio} onChange={event => seek(Number(event.target.value))}/>
-    <audio id="qvm-export-audio" ref={audioRef} crossOrigin="anonymous" preload="metadata" onTimeUpdate={event => handleTime(event.currentTarget.currentTime * 1000)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); handleTime(durationMs) }} />
+    <input aria-label="Recitation progress" type="range" min="0" max="100" step="0.1" value={progress} disabled={!audio || !durationMs} onChange={event => seek(Number(event.target.value))}/>
+    <audio id="qvm-export-audio" ref={audioRef} crossOrigin="anonymous" preload="metadata" onTimeUpdate={event => handleTime(event.currentTarget.currentTime * 1000)} onLoadedMetadata={() => setError('')} onError={() => { setPlaying(false); setError('This recitation could not be played. Choose another reciter.'); statusRef.current?.('Recitation audio failed to play') }} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); handleTime(durationMs) }} />
     <small className="hint">{error || (loadingAudio ? 'Loading Surah recitation…' : audio ? `${formatTime(currentMs)} / ${formatTime(durationMs)} · ${speed}×` : 'Select a reciter')}</small>
   </div>
 }
