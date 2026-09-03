@@ -16,13 +16,13 @@ const PUBLIC_RECITERS: PublicReciter[] = [
   { id: 6, reciter_id: 6, reciter_name: 'Muhammad Al-Muhaisni', name: 'Muhammad Al-Muhaisni', arabic_name: 'محمد المحيسني', style: 'Murattal · Hafs An Asim', path: 'https://server11.mp3quran.net/mhsny', fallbackPaths: ['https://server8.mp3quran.net/mhsny'] },
 ]
 
-const LOCAL_TIMING_SOURCES: Record<number, string> = {
-  1: 'surah/abdul-basit/abdul-basit-abd-us-samad-murattal.db.zip',
-  2: 'surah/minshawy/muhammad-siddiq-al-minshawy-murattal.db.zip',
+// Only use timings from a database that belongs to the same reciter as the audio.
+// The bundled Sudais ayah database is deliberately NOT used for Muhaisni audio.
+const LOCAL_TIMING_SOURCES: Partial<Record<number, string>> = {
+  // Current bundled databases with matching reciters:
   3: 'surah/saad-ghamadi/saad-ghamadi.db.zip',
   4: 'surah/sadaqat-ali/sadaqat-ali.db.zip',
   5: 'surah/noreen-siddiq-ad-doori/noreen-siddiq-ad-doori-an-abi-amr.db.zip',
-  6: 'ayah/sudais/ayah-recitation-abdul-rahman-al-sudais-murattal-hafs-951.db.zip',
 }
 
 let timingManifestPromise: Promise<Record<string, any[]>> | null = null
@@ -49,7 +49,7 @@ export async function fetchChapterAudio(reciterId: number, chapterNumber: number
   if (!Number.isInteger(chapterNumber) || chapterNumber < 1 || chapterNumber > 114) throw new Error('Invalid Surah number.')
 
   const source = LOCAL_TIMING_SOURCES[reciterId]
-  const manifest = await loadLocalTimingManifest()
+  const manifest = source ? await loadLocalTimingManifest() : {}
   const rows = source ? (manifest[source] ?? []) : []
   const timestamps = rows
     .filter(row => String(row.verseKey).startsWith(`${chapterNumber}:`))
