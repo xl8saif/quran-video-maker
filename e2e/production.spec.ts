@@ -58,14 +58,28 @@ test('background library shows real image and video thumbnails', async ({ page }
   await expect(page.locator('.glass-logo')).toHaveCount(2)
 })
 
-test('recitation controls load a public chapter source without the old API failure', async ({ page }) => {
+test('recitation controls expose the bundled public reciter library', async ({ page }) => {
   await page.goto('/')
   const reciter = page.getByRole('combobox', { name: 'Reciter' })
   await expect(reciter).toBeVisible({ timeout: 30000 })
-  await expect(reciter.locator('option')).toHaveCount(5)
+  await expect(reciter.locator('option')).toHaveCount(6)
+  await expect(reciter.locator('option', { hasText: 'Muhammad Al-Muhaisni' })).toHaveCount(1)
   await expect(page.getByText('Quran Foundation request failed', { exact: false })).toHaveCount(0)
   const audio = page.locator('#qvm-export-audio')
-  await expect(audio).toHaveAttribute('src', /Quran-Audio-Chapters\/raw\/refs\/heads\/main\/Data\/1\/1\.mp3/)
+  await expect(audio).toHaveAttribute('src', 'https://server8.mp3quran.net/afs/001.mp3')
+})
+
+test('platform presets expose the supported social video formats', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByText('Platform presets', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use YouTube preset', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use YouTube Shorts preset', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use TikTok preset', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use Instagram Reels preset', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use Facebook preset', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use BiliBili preset', exact: true })).toBeVisible()
+  await expect(page.getByText('YouTube 16:9 — 1920×1080', { exact: true })).toBeVisible()
+  await expect(page.getByText('Vertical 9:16 — 1080×1920', { exact: true })).toBeVisible()
 })
 
 test('export is initially available and does not start without user action', async ({ page }) => {
