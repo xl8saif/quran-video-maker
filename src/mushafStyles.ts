@@ -1,10 +1,10 @@
-export type MushafStyleId = 'hafs-arabic-naskh' | 'indo-pak-muhammadi'
+export type MushafStyleId = 'hafs-arabic-naskh' | 'indo-pak-muhammadi' | 'king-fahd-uthmanic-hafs'
 
 export type MushafStyle = {
   id: MushafStyleId
   label: string
   description: string
-  script: 'Arabic Naskh' | 'Indo-Pak Naskh'
+  script: 'Arabic Naskh' | 'Indo-Pak Naskh' | 'Uthmanic Script'
   fontFamily: string
   direction: 'rtl'
   coordinateProfile: string
@@ -33,6 +33,15 @@ export const mushafStyles: MushafStyle[] = [
     fontFamily: 'Muhammadi Quran, serif',
     direction: 'rtl',
     coordinateProfile: 'indo-pak-muhammadi-v1',
+  },
+  {
+    id: 'king-fahd-uthmanic-hafs',
+    label: 'King Fahd — Uthmanic Hafs',
+    description: 'King Fahd Complex Uthmanic Script HAFS presentation for the Madinah Mushaf style',
+    script: 'Uthmanic Script',
+    fontFamily: 'KFGQPC HAFS Uthmanic Script, serif',
+    direction: 'rtl',
+    coordinateProfile: 'king-fahd-uthmanic-hafs-v1',
   },
 ]
 
