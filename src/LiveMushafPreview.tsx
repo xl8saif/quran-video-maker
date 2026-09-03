@@ -27,7 +27,8 @@ function LiveMushafPreviewInner({ styleId, page, accessToken = '', clientId = ''
   const [fingerStyle, setFingerStyle] = React.useState<React.CSSProperties>({ opacity: 0 })
   const compositorRef = React.useRef<{ draw: () => void; destroy: () => void } | null>(null)
   const { getId } = useTranslationResources()
-  const translationIds = React.useMemo(() => translationLanguages.map(getId).filter((id): id is number => typeof id === 'number'), [translationLanguages, getId])
+  const translationLanguageKey = translationLanguages.join('|')
+  const translationIds = React.useMemo(() => translationLanguages.map(getId).filter((id): id is number => typeof id === 'number'), [translationLanguageKey, getId])
   const effectiveActiveVerse = liveActiveVerse || activeVerse
   const effectiveActiveWordIndex = liveActiveVerse ? liveActiveWordIndex : activeWordIndex
   const resolvedChapterNumber = chapterNumber || Number(verses[0]?.verse_key?.split(':')[0]) || 1
