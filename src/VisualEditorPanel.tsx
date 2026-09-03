@@ -41,7 +41,7 @@ export function VisualEditorPanel({ value, onChange, aspectRatio }: Props) {
       </fieldset>
     </div>
     <label className="toggle-option visual-safe-toggle"><input type="checkbox" checked={value.showSafeAreas} onChange={event => update({ showSafeAreas: event.target.checked })} /><span>Show {aspectRatio} safe area</span></label>
-    <button type="button" className="ghost" onClick={() => onChange({ quranX:50,quranY:42,quranScale:100,translationX:50,translationY:76,translationScale:100,logoX:88,logoY:90,logoSize:12,logoOpacity:100,backgroundBlur:0,backgroundDim:0,gradientOverlay:true,gradientStrength:28,showSafeAreas:false })}>Reset layout</button>
+    <button type="button" className="ghost" onClick={() => onChange({ quranX:50,quranY:42,quranScale:100,translationX:50,translationY:76,translationScale:100,logoX:88,logoY:90,logoSize:12,logoOpacity:100,backgroundX:50,backgroundY:50,backgroundZoom:100,backgroundBlur:0,backgroundDim:0,gradientOverlay:true,gradientStrength:28,showSafeAreas:false })}>Reset layout</button>
   </section>
 }
 
@@ -51,6 +51,7 @@ export function normalizeVisualEditorSettings(settings: VisualEditorSettings): V
     quranX: clampVisualValue(settings.quranX, 0, 100), quranY: clampVisualValue(settings.quranY, 0, 100), quranScale: clampVisualValue(settings.quranScale, 50, 200),
     translationX: clampVisualValue(settings.translationX, 0, 100), translationY: clampVisualValue(settings.translationY, 0, 100), translationScale: clampVisualValue(settings.translationScale, 50, 200),
     logoX: clampVisualValue(settings.logoX, 0, 100), logoY: clampVisualValue(settings.logoY, 0, 100), logoSize: clampVisualValue(settings.logoSize, 1, 50), logoOpacity: clampVisualValue(settings.logoOpacity, 0, 100),
+    backgroundX: clampVisualValue(settings.backgroundX, 0, 100), backgroundY: clampVisualValue(settings.backgroundY, 0, 100), backgroundZoom: clampVisualValue(settings.backgroundZoom, 50, 200),
     backgroundBlur: clampVisualValue(settings.backgroundBlur, 0, 30), backgroundDim: clampVisualValue(settings.backgroundDim, 0, 100), gradientStrength: clampVisualValue(settings.gradientStrength, 0, 100),
   }
 }
