@@ -44,15 +44,15 @@ test('Surah, language and translation-library controls are interactive', async (
   await expect(page.getByText('Open translation sources', { exact: true })).toBeVisible()
 })
 
-test('background library shows real image and video thumbnails', async ({ page }) => {
+test('background library uses only bundled local image and video thumbnails', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByText('Background', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: /Masjid Interior/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: /Desert Landscape/ })).toBeVisible()
   const imageThumbnails = page.locator('.media-thumb img')
   await expect(imageThumbnails).toHaveCount(5)
-  await expect.poll(async () => imageThumbnails.evaluateAll(images => images.filter(image => (image as HTMLImageElement).naturalWidth > 0).length)).toBeGreaterThan(0)
-  await expect(page.locator('.media-thumb video')).toHaveCount(5)
+  await expect.poll(async () => imageThumbnails.evaluateAll(images => images.filter(image => (image as HTMLImageElement).naturalWidth > 0).length)).toBe(5)
+  const videoThumbnails = page.locator('.media-thumb video')
+  await expect(videoThumbnails).toHaveCount(3)
+  await expect.poll(async () => videoThumbnails.evaluateAll(videos => videos.filter(video => (video as HTMLVideoElement).readyState >= 1).length)).toBe(3)
   await expect(page.getByRole('button', { name: 'Waraq logo', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'CloudTrans logo', exact: true })).toBeVisible()
   await expect(page.locator('.glass-logo')).toHaveCount(2)
