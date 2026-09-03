@@ -24,13 +24,13 @@ const PUBLIC_RECITERS: PublicReciter[] = [
 ]
 
 // A timing source is used only with the reciter/audio it was produced for.
-// This prevents a valid timestamp database from being incorrectly applied to another voice.
+// This prevents a valid timing database from being incorrectly applied to another voice.
 const LOCAL_TIMING_SOURCES: Partial<Record<number, string>> = {
-  7: 'surah/abdul-basit/abdul-bas(it).db.zip',
-  8: 'surah/al-tablawi/al-tablawi.db.zip',
-  9: 'surah/minshawy/minshawy.db.zip',
+  7: 'surah/abdul-basit/abdul-basit-abd-us-samad-murattal.db.zip',
+  8: 'surah/al-tablawi/mohammad-al-tablawi.db.zip',
+  9: 'surah/minshawy/muhammad-siddiq-al-minshawy-murattal.db.zip',
   10: 'ayah/sudais/ayah-recitation-abdul-rahman-al-sudais-murattal-hafs-951.db.zip',
-  11: 'surah/noreen-siddiq-ad-doori/noreen-siddiq-ad-doori.db.zip',
+  11: 'surah/noreen-siddiq-ad-doori/noreen-siddiq-ad-doori-an-abi-amr.db.zip',
   12: 'surah/saad-ghamadi/saad-ghamadi.db.zip',
   13: 'surah/sadaqat-ali/sadaqat-ali.db.zip',
 }
