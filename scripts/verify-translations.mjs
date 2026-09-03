@@ -21,7 +21,7 @@ const files = [
   'ar.muyassar.txt','en.daryabadi.txt','hi.farooq.txt','ko.korean.txt',
   'ta.tamil.txt','ur.jalandhry.txt','ur.junagarhi.txt','zh.jian.txt'
 ]
-const root = path.resolve('public/data')
+const root = path.resolve('public/data/quran/translations')
 const failures = []
 const report = []
 
@@ -60,8 +60,6 @@ for (const file of files) {
     counts[surah]++
   }
 
-  // Some bundled source files contain non-ayah metadata lines. They must not
-  // hide missing ayahs, but they also must not make a complete translation fail.
   if (seen.size !== 6236) failures.push(`${file}: ${seen.size} unique ayahs, expected 6236`)
   if (empty) failures.push(`${file}: ${empty} empty translations`)
   for (let s = 1; s <= 114; s++) {
